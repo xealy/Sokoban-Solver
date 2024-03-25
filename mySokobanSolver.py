@@ -35,15 +35,13 @@ import sokoban
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-
 def my_team():
     '''
     Return the list of the team members of this assignment submission as a list
     of triplet of the form (student_number, first_name, last_name)
     
     '''
-#    return [ (1234567, 'Ada', 'Lovelace'), (1234568, 'Grace', 'Hopper'), (1234569, 'Eva', 'Tardos') ]
-    raise NotImplementedError()
+    return [(10494588, 'Alexandra', 'Chua Rossiter'), (11941472, 'Alexandra', 'Axcrona'), (11925230, 'Belen', 'Sogo Mielgo')]
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -74,7 +72,107 @@ def taboo_cells(warehouse):
        and the boxes.  
     '''
     ##         "INSERT YOUR CODE HERE"    
-    raise NotImplementedError()
+    # lists of cell types useful for later
+    target_cells = ['!', '.', '*']
+    cells_to_remove = ['@', '$']
+    
+    '''Convert the warehouse to an array consisting of each of the separate rows for convenience
+    and replace the player cells and box cells (but not target cells) with blank cells
+    '''
+    warehouse_string = str(warehouse)
+    for cell in cells_to_remove:
+        warehouse_string = warehouse_string.replace(cell,' ')
+
+    warehouse_list = []
+    for row in warehouse_string.split('\n'):
+        warehouse_list.append(list(row))
+
+
+    '''
+    Cell is a corner if there are one or more wall cells above OR below 
+    AND one or more wall cells to the left OR right
+    But remember that cell also has to be INSIDE for it to be taboo
+    '''
+
+    def is_corner(warehouse, r, c, wall=0):
+        nr_walls_left_right = 0
+        nr_walls_up_down = 0
+
+        '''Checking for walls left and right'''
+        if warehouse[r][c + 1] == '#':
+            nr_walls_left_right += 1 
+        if warehouse[r][c - 1] == '#':
+            nr_walls_left_right += 1 
+
+        '''Checking for walls up and down'''
+        if warehouse[r + 1][c] == '#':
+                nr_walls_up_down += 1 
+        if warehouse[r - 1][c] == '#':
+                nr_walls_up_down += 1 
+
+        if (nr_walls_left_right >= 1 and nr_walls_up_down >= 1):
+            return True
+        else:
+            return False
+
+    '''implementing rule 1'''
+    for r in range(len(warehouse_list)-1):
+        inside_warehouse = False
+        for c in range(len(warehouse_list[0])-1):
+            if not inside_warehouse:
+                if warehouse_list[r][c] == '#':
+                    inside_warehouse = True
+            else:
+                all_empty = True
+                for cell in warehouse_list[r][c:]:
+                    if cell != ' ':
+                        all_empty = False
+                        break
+                if all_empty:
+                    break
+
+                cell = warehouse_list[r][c]
+                if cell not in target_cells:
+                    if cell != '#':
+                        if is_corner(warehouse_list, r, c):
+                            warehouse_list[r][c] = 'X'
+
+    # '''implementing rule 2'''
+    # # check for wall cells only between two Xes (taboo corner cells)
+    # for r in range(len(warehouse_list)):
+    #     for c in range(len(warehouse_list[0])):
+    #         if warehouse_list[r][c] == 'X':
+    #             # Look for another 'X' in the same row to the right
+    #             next_x = c + 1
+    #             while next_x < len(warehouse_list[0]) and warehouse_list[r][next_x] != 'X':
+    #                 next_x += 1
+    #             if next_x < len(warehouse_list[0]):
+    #                 # We found another 'X', mark cells in between as taboo
+    #                 for i in range(c + 1, next_x):
+    #                     if warehouse_list[r][i] not in target_cells:
+    #                         warehouse_list[r][i] = 'X'
+    #             # Look for another 'X' in the same column below
+    #             next_x = r + 1
+    #             while next_x < len(warehouse_list) and warehouse_list[next_x][c] != 'X':
+    #                 next_x += 1
+    #             if next_x < len(warehouse_list):
+    #                 # We found another 'X', mark cells in between as taboo
+    #                 for i in range(r + 1, next_x):
+    #                     if warehouse_list[i][c] not in target_cells:
+    #                         warehouse_list[i][c] = 'X'
+
+    
+        
+    '''Converting warehouse representation back into string format'''
+    warehouse_string = ""
+    for line in warehouse_list:
+        warehouse_string += ''.join(line) + '\n'
+    warehouse_string = warehouse_string.rstrip('\n')
+    
+    for cell in target_cells:
+        warehouse_string = warehouse_string.replace(cell, ' ')
+    
+    return warehouse_string
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -116,7 +214,6 @@ class SokobanPuzzle(search.Problem):
 
 def check_elem_action_seq(warehouse, action_seq):
     '''
-    
     Determine if the sequence of actions listed in 'action_seq' is legal or not.
     
     Important notes:
@@ -135,12 +232,116 @@ def check_elem_action_seq(warehouse, action_seq):
         Otherwise, if all actions were successful, return                 
                A string representing the state of the puzzle after applying
                the sequence of actions.  This must be the same string as the
-               string returned by the method  Warehouse.__str__()
+               string returned by the method Warehouse.__str__()
     '''
     
-    ##         "INSERT YOUR CODE HERE"
+    # Get location of Worker (warehouse.worker)
+    x, y = warehouse.worker
+    impossible_string = 'Impossible'
+
+    # loop through each action in action_seq to check if valid
+    for action in action_seq:
+        # For left action
+        if action == 'Left':
+            print('Left')
+            x_new, y_new = x-1, y
+
+            if (x_new, y_new) in warehouse.walls: # if new coordinates are a wall
+                return impossible_string # Failed: player is blocked
+            
+            if (x_new, y_new) in warehouse.boxes: # if new coordinates are a box
+                if (x_new-1, y_new) not in warehouse.walls: # if space left of box is not a wall
+                    warehouse.boxes.remove((x_new, y_new))
+                    warehouse.boxes.append((x_new-1, y_new))
+                    x = x_new # Successful: can move the worker + box, update with new x coordinate
+                else:
+                    return impossible_string # Failed: box is blocked
+            else: 
+                x = x_new # Successful: can move the worker, update with new x coordinate
+
+        # For right action
+        elif action == 'Right':
+            print('Right')
+            x_new, y_new = x+1, y
+
+            if (x_new, y_new) in warehouse.walls: # if new coordinates are a wall
+                return impossible_string # Failed: player is blocked
+            
+            if (x_new, y_new) in warehouse.boxes: # if new coordinates are a box
+                if (x_new+1, y_new) not in warehouse.walls: # if space left of box is not a wall
+                    warehouse.boxes.remove((x_new, y_new))
+                    warehouse.boxes.append((x_new+1, y_new))
+                    x = x_new # Successful: can move the worker + box, update with new x coordinate
+                else:
+                    return impossible_string # Failed: box is blocked
+            else: 
+                x = x_new # Successful: can move the worker, update with new x coordinate
+
+        # For up action
+        elif action == 'Up':
+            print('Up')
+            x_new, y_new = x, y-1
+
+            if (x_new, y_new) in warehouse.walls: # if new coordinates are a wall
+                return impossible_string # Failed: player is blocked
+            
+            if (x_new, y_new) in warehouse.boxes: # if new coordinates are a box
+                if (x_new, y_new-1) not in warehouse.walls: # if space left of box is not a wall
+                    warehouse.boxes.remove((x_new, y_new))
+                    warehouse.boxes.append((x_new, y_new-1))
+                    y = y_new # Successful: can move the worker + box, update with new x coordinate
+                else:
+                    return impossible_string # Failed: box is blocked
+            else: 
+                y = y_new 
+
+        # For down action
+        elif action == 'Down':
+            print('Down')
+            x_new, y_new = x, y+1
+
+            if (x_new, y_new) in warehouse.walls: # if new coordinates are a wall
+                return impossible_string # Failed: player is blocked
+            
+            if (x_new, y_new) in warehouse.boxes: # if new coordinates are a box
+                if (x_new, y_new+1) not in warehouse.walls: # if space left of box is not a wall
+                    warehouse.boxes.remove((x_new, y_new))
+                    warehouse.boxes.append((x_new, y_new+1))
+                    y = y_new # Successful: can move the worker + box, update with new x coordinate
+                else:
+                    return impossible_string # Failed: box is blocked
+            else: 
+                y = y_new 
+
+        # For no action
+        else:
+            print('No action')
     
-    raise NotImplementedError()
+    # Update worker location at the end of action sequence (with latest location)
+    warehouse.worker = x, y
+
+    # USING Warehouse.__str__ method from Sokoban.py 
+    X, Y = zip(*warehouse.walls)
+    x_size, y_size = 1 + max(X), 1 + max(Y)
+    vis = [[" "] * x_size for z in range(y_size)]
+    for (x, y) in warehouse.walls:
+        vis[y][x] = "#"
+    for (x, y) in warehouse.targets:
+        vis[y][x] = "."
+    if vis[warehouse.worker[1]][warehouse.worker[0]] == ".":
+        vis[warehouse.worker[1]][warehouse.worker[0]] = "!"
+    else:
+        vis[warehouse.worker[1]][warehouse.worker[0]] = "@"
+    for (x, y) in warehouse.boxes:
+        if vis[y][x] == ".":
+            vis[y][x] = "*"
+        else:
+            vis[y][x] = "$"
+    current_warehouse_state = "\n".join(["".join(line) for line in vis])
+    # END OF Warehouse.__str__ method from Sokoban.py 
+
+    current_warehouse_state_string = str(current_warehouse_state)
+    return str(current_warehouse_state_string)
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
