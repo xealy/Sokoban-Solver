@@ -74,7 +74,107 @@ def taboo_cells(warehouse):
        and the boxes.  
     '''
     ##         "INSERT YOUR CODE HERE"    
-    raise NotImplementedError()
+    # lists of cell types useful for later
+    target_cells = ['!', '.', '*']
+    cells_to_remove = ['@', '$']
+    
+    '''Convert the warehouse to an array consisting of each of the separate rows for convenience
+    and replace the player cells and box cells (but not target cells) with blank cells
+    '''
+    warehouse_string = str(warehouse)
+    for cell in cells_to_remove:
+        warehouse_string = warehouse_string.replace(cell,' ')
+
+    warehouse_list = []
+    for row in warehouse_string.split('\n'):
+        warehouse_list.append(list(row))
+
+
+    '''
+    Cell is a corner if there are one or more wall cells above OR below 
+    AND one or more wall cells to the left OR right
+    But remember that cell also has to be INSIDE for it to be taboo
+    '''
+
+    def is_corner(warehouse, r, c, wall=0):
+        nr_walls_left_right = 0
+        nr_walls_up_down = 0
+
+        '''Checking for walls left and right'''
+        if warehouse[r][c + 1] == '#':
+            nr_walls_left_right += 1 
+        if warehouse[r][c - 1] == '#':
+            nr_walls_left_right += 1 
+
+        '''Checking for walls up and down'''
+        if warehouse[r + 1][c] == '#':
+                nr_walls_up_down += 1 
+        if warehouse[r - 1][c] == '#':
+                nr_walls_up_down += 1 
+
+        if (nr_walls_left_right >= 1 and nr_walls_up_down >= 1):
+            return True
+        else:
+            return False
+
+    '''implementing rule 1'''
+    for r in range(len(warehouse_list)-1):
+        inside_warehouse = False
+        for c in range(len(warehouse_list[0])-1):
+            if not inside_warehouse:
+                if warehouse_list[r][c] == '#':
+                    inside_warehouse = True
+            else:
+                all_empty = True
+                for cell in warehouse_list[r][c:]:
+                    if cell != ' ':
+                        all_empty = False
+                        break
+                if all_empty:
+                    break
+
+                cell = warehouse_list[r][c]
+                if cell not in target_cells:
+                    if cell != '#':
+                        if is_corner(warehouse_list, r, c):
+                            warehouse_list[r][c] = 'X'
+
+    # '''implementing rule 2'''
+    # # check for wall cells only between two Xes (taboo corner cells)
+    # for r in range(len(warehouse_list)):
+    #     for c in range(len(warehouse_list[0])):
+    #         if warehouse_list[r][c] == 'X':
+    #             # Look for another 'X' in the same row to the right
+    #             next_x = c + 1
+    #             while next_x < len(warehouse_list[0]) and warehouse_list[r][next_x] != 'X':
+    #                 next_x += 1
+    #             if next_x < len(warehouse_list[0]):
+    #                 # We found another 'X', mark cells in between as taboo
+    #                 for i in range(c + 1, next_x):
+    #                     if warehouse_list[r][i] not in target_cells:
+    #                         warehouse_list[r][i] = 'X'
+    #             # Look for another 'X' in the same column below
+    #             next_x = r + 1
+    #             while next_x < len(warehouse_list) and warehouse_list[next_x][c] != 'X':
+    #                 next_x += 1
+    #             if next_x < len(warehouse_list):
+    #                 # We found another 'X', mark cells in between as taboo
+    #                 for i in range(r + 1, next_x):
+    #                     if warehouse_list[i][c] not in target_cells:
+    #                         warehouse_list[i][c] = 'X'
+
+    
+        
+    '''Converting warehouse representation back into string format'''
+    warehouse_string = ""
+    for line in warehouse_list:
+        warehouse_string += ''.join(line) + '\n'
+    warehouse_string = warehouse_string.rstrip('\n')
+    
+    for cell in target_cells:
+        warehouse_string = warehouse_string.replace(cell, ' ')
+    
+    return warehouse_string
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
