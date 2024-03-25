@@ -180,7 +180,7 @@ def taboo_cells(warehouse):
                         if cell != 'X':
                             good2go = False
                             break
-                        if cell == 'X' and not in target_cells:
+                        if cell == 'X' and cell not in target_cells:
                             good2go = True
                             #check row
                             for cell in warehouse_list[r][c:]:
@@ -189,22 +189,22 @@ def taboo_cells(warehouse):
                                 if cell != 'X':
                                     good2go = False
                                     break
-                                if cell == 'X' and not in target_cells:
+                                if cell == 'X' and cell not in target_cells:
                                     good2go = True
                                     warehouse_list[r][c:] = 'X'
-                                if all_empty
+                                if all_empty:
                                     break
                             #check column    
-                            for cell in warehouse_list[r:][c]
+                            for cell in warehouse_list[r:][c]:
                                 if cell != ' ':
                                     all_empty = False
                                 if cell != 'X':
                                     good2go = False
                                     break
-                                if cell == 'X' and not in target_cells:
+                                if cell == 'X' and cell not in target_cells:
                                     good2go = True
                                     warehouse_list[r:][c] = 'X'
-                                if all_empty
+                                if all_empty:
                                     break                                
                 if all_empty:
                     break
