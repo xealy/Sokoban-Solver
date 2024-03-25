@@ -35,15 +35,13 @@ import sokoban
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-
 def my_team():
     '''
     Return the list of the team members of this assignment submission as a list
     of triplet of the form (student_number, first_name, last_name)
     
     '''
-#    return [ (1234567, 'Ada', 'Lovelace'), (1234568, 'Grace', 'Hopper'), (1234569, 'Eva', 'Tardos') ]
-    raise NotImplementedError()
+    return [(10494588, 'Alexandra', 'Chua Rossiter'), (11941472, 'Alexandra', 'Axcrona'), (11925230, 'Belen', 'Sogo Mielgo')]
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -216,7 +214,6 @@ class SokobanPuzzle(search.Problem):
 
 def check_elem_action_seq(warehouse, action_seq):
     '''
-    
     Determine if the sequence of actions listed in 'action_seq' is legal or not.
     
     Important notes:
@@ -235,12 +232,116 @@ def check_elem_action_seq(warehouse, action_seq):
         Otherwise, if all actions were successful, return                 
                A string representing the state of the puzzle after applying
                the sequence of actions.  This must be the same string as the
-               string returned by the method  Warehouse.__str__()
+               string returned by the method Warehouse.__str__()
     '''
     
-    ##         "INSERT YOUR CODE HERE"
+    # Get location of Worker (warehouse.worker)
+    x, y = warehouse.worker
+    impossible_string = 'Impossible'
+
+    # loop through each action in action_seq to check if valid
+    for action in action_seq:
+        # For left action
+        if action == 'Left':
+            print('Left')
+            x_new, y_new = x-1, y
+
+            if (x_new, y_new) in warehouse.walls: # if new coordinates are a wall
+                return impossible_string # Failed: player is blocked
+            
+            if (x_new, y_new) in warehouse.boxes: # if new coordinates are a box
+                if (x_new-1, y_new) not in warehouse.walls: # if space left of box is not a wall
+                    warehouse.boxes.remove((x_new, y_new))
+                    warehouse.boxes.append((x_new-1, y_new))
+                    x = x_new # Successful: can move the worker + box, update with new x coordinate
+                else:
+                    return impossible_string # Failed: box is blocked
+            else: 
+                x = x_new # Successful: can move the worker, update with new x coordinate
+
+        # For right action
+        elif action == 'Right':
+            print('Right')
+            x_new, y_new = x+1, y
+
+            if (x_new, y_new) in warehouse.walls: # if new coordinates are a wall
+                return impossible_string # Failed: player is blocked
+            
+            if (x_new, y_new) in warehouse.boxes: # if new coordinates are a box
+                if (x_new+1, y_new) not in warehouse.walls: # if space left of box is not a wall
+                    warehouse.boxes.remove((x_new, y_new))
+                    warehouse.boxes.append((x_new+1, y_new))
+                    x = x_new # Successful: can move the worker + box, update with new x coordinate
+                else:
+                    return impossible_string # Failed: box is blocked
+            else: 
+                x = x_new # Successful: can move the worker, update with new x coordinate
+
+        # For up action
+        elif action == 'Up':
+            print('Up')
+            x_new, y_new = x, y-1
+
+            if (x_new, y_new) in warehouse.walls: # if new coordinates are a wall
+                return impossible_string # Failed: player is blocked
+            
+            if (x_new, y_new) in warehouse.boxes: # if new coordinates are a box
+                if (x_new, y_new-1) not in warehouse.walls: # if space left of box is not a wall
+                    warehouse.boxes.remove((x_new, y_new))
+                    warehouse.boxes.append((x_new, y_new-1))
+                    y = y_new # Successful: can move the worker + box, update with new x coordinate
+                else:
+                    return impossible_string # Failed: box is blocked
+            else: 
+                y = y_new 
+
+        # For down action
+        elif action == 'Down':
+            print('Down')
+            x_new, y_new = x, y+1
+
+            if (x_new, y_new) in warehouse.walls: # if new coordinates are a wall
+                return impossible_string # Failed: player is blocked
+            
+            if (x_new, y_new) in warehouse.boxes: # if new coordinates are a box
+                if (x_new, y_new+1) not in warehouse.walls: # if space left of box is not a wall
+                    warehouse.boxes.remove((x_new, y_new))
+                    warehouse.boxes.append((x_new, y_new+1))
+                    y = y_new # Successful: can move the worker + box, update with new x coordinate
+                else:
+                    return impossible_string # Failed: box is blocked
+            else: 
+                y = y_new 
+
+        # For no action
+        else:
+            print('No action')
     
-    raise NotImplementedError()
+    # Update worker location at the end of action sequence (with latest location)
+    warehouse.worker = x, y
+
+    # USING Warehouse.__str__ method from Sokoban.py 
+    X, Y = zip(*warehouse.walls)
+    x_size, y_size = 1 + max(X), 1 + max(Y)
+    vis = [[" "] * x_size for z in range(y_size)]
+    for (x, y) in warehouse.walls:
+        vis[y][x] = "#"
+    for (x, y) in warehouse.targets:
+        vis[y][x] = "."
+    if vis[warehouse.worker[1]][warehouse.worker[0]] == ".":
+        vis[warehouse.worker[1]][warehouse.worker[0]] = "!"
+    else:
+        vis[warehouse.worker[1]][warehouse.worker[0]] = "@"
+    for (x, y) in warehouse.boxes:
+        if vis[y][x] == ".":
+            vis[y][x] = "*"
+        else:
+            vis[y][x] = "$"
+    current_warehouse_state = "\n".join(["".join(line) for line in vis])
+    # END OF Warehouse.__str__ method from Sokoban.py 
+
+    current_warehouse_state_string = str(current_warehouse_state)
+    return str(current_warehouse_state_string)
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
