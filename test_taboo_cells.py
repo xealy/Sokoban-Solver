@@ -21,10 +21,24 @@ def test_taboo_cells():
         print('Expected ');print(expected_answer)
         print('But, received ');print(answer)
 
+def test_taboo_cells_2():
+    wh = Warehouse()
+    wh.load_warehouse("./warehouses/warehouse_11.txt")
+    expected_answer = '  ###### \n  #XXXX# \n  # ## ##\n### #X X#\n#X  #  X#\n#X     X#\n#XX######\n####     '
+    answer = taboo_cells(wh)
+    fcn = test_taboo_cells    
+    print('<<  Testing {} >>'.format(fcn.__name__))
+    if answer==expected_answer:
+        print(fcn.__name__, ' passed!  :-)\n')
+    else:
+        print(fcn.__name__, ' failed!  :-(\n')
+        print('Expected ');print(expected_answer)
+        print('But, received ');print(answer)
+
 if __name__ == "__main__":   
 #    test_warehouse_1() # test Warehouse
 #    test_warehouse_2() # test Warehouse
     
 #    print(my_team())  # should print your team
 
-    test_taboo_cells() 
+    test_taboo_cells_2() 

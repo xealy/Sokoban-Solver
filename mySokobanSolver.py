@@ -139,42 +139,37 @@ def taboo_cells(warehouse):
                         if is_corner(warehouse_list, r, c):
                             warehouse_list[r][c] = 'X'
 
-        # def inside_warehouse(warehouse):
-    #     # know that position of worker in the start must be inside the warehouse
-    #     cells_inside_warehouse = []
-    #     cells_inside_warehouse.append(warehouse.worker)
+        def inside_warehouse(warehouse):
+            # know that position of worker in the start must be inside the warehouse
+            cells_inside_warehouse = []
+            worker = tuple_swap(warehouse.worker)
+            cells_inside_warehouse.append(worker)
+            boundary = []
+            
+            directions = [(0,1), (0,-1), (1,0), (-1,0)]
 
-    #     # check 
+            for d in directions:
+                if warehouse_list[worker[0] + d[0]][worker[1] + d[1]] != '#':
+                    boundary.append((worker[0] + d[0],worker[1] + d[1]))
 
-    #     cells_inside_warehouse.sort()
-    #     return cells_inside_warehouse
+            while boundary != []:
+                inside = boundary.pop(0)
+                cells_inside_warehouse.append(inside)
+                for d in directions:
+                    if warehouse_list[inside[0] + d[0]][inside[1] + d[1]] != '#':
+                        if (inside[0] + d[0], inside[1] + d[1]) not in boundary:
+                            if (inside[0] + d[0], inside[1] + d[1]) not in cells_inside_warehouse:
+                                boundary.append((inside[0] + d[0], inside[1] + d[1]))
+            return cells_inside_warehouse
     
-    # cells_inside_warehouse = inside_warehouse(warehouse)
+    cells_inside_warehouse = inside_warehouse(warehouse)
 
-    inside_game_set = [warehouse.worker]
-    frontier_set = []
-    for (dx, dy) in [(0,1),(0,-1),(1,0),(-1,0)]:
-        #if we hit a wall, we are not inside game as player cannot walk there. 
-        if warehouse_list[dy + warehouse.worker[1]][dx + warehouse.worker[0]] != '#':
-            frontier_set.append((warehouse.worker[0]+dx, warehouse.worker[1]+dy))
-    
-    while frontier_set:
-        elem = frontier_set.pop(0)
-        inside_game_set.append(elem)
-        for (dx, dy) in [(0,1),(0,-1),(1,0),(-1,0)]:
-            if warehouse_list[dy + elem[1]][dx+elem[0]] != '#':
-                if ((dx + elem[0], dy + elem[1]) not in inside_game_set \
-                and (dx + elem[0], dy + elem[1]) not in frontier_set):
-                    frontier_set.append((dx + elem[0],dy + elem[1]))
-    #sort the inside_game_set in ascending order by x, then y. 
-    inside_game_set.sort()
 
     '''implementing rule 2'''
     # cell can be target cell, blank cell, wall cell or another taboo cell
-
-    warehouse_list_temp = warehouse_list    
+    warehouse_list_temp = warehouse_list
     def make_taboo_cells(warehouse_list_2):
-        for (r,c) in inside_game_set:
+        for (r,c) in cells_inside_warehouse:
             # iterate over all cells inside the warehouse
             # only cells inside the warehouse can become taboo cells
             if warehouse_list_2[r][c] == 'X':
@@ -201,13 +196,13 @@ def taboo_cells(warehouse):
                             # add taboo cells between them.
 
                             # check only walls above
-                            only_walls_above = all([cell == '#' for cell in warehouse_list_2[r+1][c-1:c_1+1]])
+                            only_walls_above = all([cell == '#' for cell in warehouse_list_2[r+1][c:c_1]])
                                 
                             # check only walls below
-                            only_walls_below = all([cell == '#' for cell in warehouse_list_2[r-1][c-1:c_1+1]])
+                            only_walls_below = all([cell == '#' for cell in warehouse_list_2[r-1][c:c_1]])
                             
                             if only_walls_above or only_walls_below:
-                                for c_2 in range(c+1,c_1-1):
+                                for c_2 in range(c+1,c_1):
                                     warehouse_list_temp[r][c_2] = 'X'
                                 break
         
@@ -216,6 +211,8 @@ def taboo_cells(warehouse):
                 # spaces in between
                 empty_cell_count = 0
                 for r_1 in range(r+1,len(warehouse_list_2)-1):
+                    # print((r, r_1, c))
+
                     # if cell in row is a target cell 
                     # all cells in between two taboo corners should not be taboo
                     if warehouse_list_2[r_1][c] in target_cells:
@@ -235,14 +232,20 @@ def taboo_cells(warehouse):
                             # add taboo cells between them.
 
                             # check only walls on left
-                            only_walls_left = all([cell == '#' for cell in warehouse_list_2[r-1:r_1+1][c-1]])
+                            only_walls_left = True
+                            for r_2 in range(r,r_1):
+                                if warehouse_list_2[r_2][c-1] != '#':
+                                    only_walls_left = False
                                 
                             # check only walls on right
-                            only_walls_right = all([cell == '#' for cell in warehouse_list_2[r-1:r_1+1][c+1]])
+                            only_walls_right = True
+                            for r_3 in range(r,r_1):
+                                if warehouse_list_2[r_3][c+1] != '#':
+                                    only_walls_right = False
                             
                             if only_walls_left or only_walls_right:
-                                for r_2 in range(r+1,r_1-1):
-                                    warehouse_list_temp[r_2][c] = 'X'
+                                for r_4 in range(r+1,r_1):
+                                    warehouse_list_temp[r_4][c] = 'X'
                                 break
         return warehouse_list_temp
 
@@ -357,3 +360,5 @@ def solve_weighted_sokoban(warehouse):
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+def tuple_swap(tup):
+    return (tup[1], tup[0])
