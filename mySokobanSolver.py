@@ -139,32 +139,115 @@ def taboo_cells(warehouse):
                         if is_corner(warehouse_list, r, c):
                             warehouse_list[r][c] = 'X'
 
-    # '''implementing rule 2'''
-    # # check for wall cells only between two Xes (taboo corner cells)
-    # for r in range(len(warehouse_list)):
-    #     for c in range(len(warehouse_list[0])):
-    #         if warehouse_list[r][c] == 'X':
-    #             # Look for another 'X' in the same row to the right
-    #             next_x = c + 1
-    #             while next_x < len(warehouse_list[0]) and warehouse_list[r][next_x] != 'X':
-    #                 next_x += 1
-    #             if next_x < len(warehouse_list[0]):
-    #                 # We found another 'X', mark cells in between as taboo
-    #                 for i in range(c + 1, next_x):
-    #                     if warehouse_list[r][i] not in target_cells:
-    #                         warehouse_list[r][i] = 'X'
-    #             # Look for another 'X' in the same column below
-    #             next_x = r + 1
-    #             while next_x < len(warehouse_list) and warehouse_list[next_x][c] != 'X':
-    #                 next_x += 1
-    #             if next_x < len(warehouse_list):
-    #                 # We found another 'X', mark cells in between as taboo
-    #                 for i in range(r + 1, next_x):
-    #                     if warehouse_list[i][c] not in target_cells:
-    #                         warehouse_list[i][c] = 'X'
+        # def inside_warehouse(warehouse):
+    #     # know that position of worker in the start must be inside the warehouse
+    #     cells_inside_warehouse = []
+    #     cells_inside_warehouse.append(warehouse.worker)
 
+    #     # check 
+
+    #     cells_inside_warehouse.sort()
+    #     return cells_inside_warehouse
     
+    # cells_inside_warehouse = inside_warehouse(warehouse)
+
+    inside_game_set = [warehouse.worker]
+    frontier_set = []
+    for (dx, dy) in [(0,1),(0,-1),(1,0),(-1,0)]:
+        #if we hit a wall, we are not inside game as player cannot walk there. 
+        if warehouse_list[dy + warehouse.worker[1]][dx + warehouse.worker[0]] != '#':
+            frontier_set.append((warehouse.worker[0]+dx, warehouse.worker[1]+dy))
+    
+    while frontier_set:
+        elem = frontier_set.pop(0)
+        inside_game_set.append(elem)
+        for (dx, dy) in [(0,1),(0,-1),(1,0),(-1,0)]:
+            if warehouse_list[dy + elem[1]][dx+elem[0]] != '#':
+                if ((dx + elem[0], dy + elem[1]) not in inside_game_set \
+                and (dx + elem[0], dy + elem[1]) not in frontier_set):
+                    frontier_set.append((dx + elem[0],dy + elem[1]))
+    #sort the inside_game_set in ascending order by x, then y. 
+    inside_game_set.sort()
+
+    '''implementing rule 2'''
+    # cell can be target cell, blank cell, wall cell or another taboo cell
+
+    warehouse_list_temp = warehouse_list    
+    def make_taboo_cells(warehouse_list_2):
+        for (r,c) in inside_game_set:
+            # iterate over all cells inside the warehouse
+            # only cells inside the warehouse can become taboo cells
+            if warehouse_list_2[r][c] == 'X':
+                # check horisontally if we have two taboo corner cells with 
+                # spaces in between
+                empty_cell_count = 0
+                for c_1 in range(c+1,len(warehouse_list_2[0])-1):
+                    # if cell in row is a target cell 
+                    # all cells in between two taboo corners should not be taboo
+                    if warehouse_list_2[r][c_1] in target_cells:
+                        break
+                    # if we hit a wall cell then the taboo cell was not
+                    # a corner cell 
+                    elif warehouse_list_2[r][c_1] == '#':
+                        break
+                    elif warehouse_list_2[r][c_1] == ' ':
+                        empty_cell_count += 1
+                        continue
+                    elif warehouse_list_2[r][c_1] == 'X':
+                        if empty_cell_count != 0:
+                            # Check if there is wall on the columns directly either up or down
+                            # of the column containing the taboo cells, between the two taboo cells.
+                            # Must be at least one empty cell between the two taboo cells in order to 
+                            # add taboo cells between them.
+
+                            # check only walls above
+                            only_walls_above = all([cell == '#' for cell in warehouse_list_2[r+1][c-1:c_1+1]])
+                                
+                            # check only walls below
+                            only_walls_below = all([cell == '#' for cell in warehouse_list_2[r-1][c-1:c_1+1]])
+                            
+                            if only_walls_above or only_walls_below:
+                                for c_2 in range(c+1,c_1-1):
+                                    warehouse_list_temp[r][c_2] = 'X'
+                                break
         
+
+                # check vertically if we have two taboo corner cells with 
+                # spaces in between
+                empty_cell_count = 0
+                for r_1 in range(r+1,len(warehouse_list_2)-1):
+                    # if cell in row is a target cell 
+                    # all cells in between two taboo corners should not be taboo
+                    if warehouse_list_2[r_1][c] in target_cells:
+                        break
+                    # if we hit a wall cell then the taboo cell was not
+                    # a corner cell 
+                    elif warehouse_list_2[r_1][c] == '#':
+                        break
+                    elif warehouse_list_2[r_1][c] == ' ':
+                        empty_cell_count += 1
+                        continue
+                    elif warehouse_list_2[r_1][c] == 'X':
+                        if empty_cell_count != 0:
+                            # Check if there is wall on the columns directly either the left or right
+                            # of the column containing the taboo cells, between the two taboo cells.
+                            # Must be at least one empty cell between the two taboo cells in order to 
+                            # add taboo cells between them.
+
+                            # check only walls on left
+                            only_walls_left = all([cell == '#' for cell in warehouse_list_2[r-1:r_1+1][c-1]])
+                                
+                            # check only walls on right
+                            only_walls_right = all([cell == '#' for cell in warehouse_list_2[r-1:r_1+1][c+1]])
+                            
+                            if only_walls_left or only_walls_right:
+                                for r_2 in range(r+1,r_1-1):
+                                    warehouse_list_temp[r_2][c] = 'X'
+                                break
+        return warehouse_list_temp
+
+    warehouse_list = make_taboo_cells(warehouse_list)
+            
     '''Converting warehouse representation back into string format'''
     warehouse_string = ""
     for line in warehouse_list:
