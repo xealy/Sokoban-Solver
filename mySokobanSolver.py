@@ -273,48 +273,56 @@ class SokobanPuzzle(search.Problem):
     the provided module 'search.py'. 
     
     '''
+    
+    #
+    #         "INSERT YOUR CODE HERE"
+    #
+    #     Revisit the sliding puzzle and the pancake puzzle for inspiration!
+    #
+    #     Note that you will need to add several functions to 
+    #     complete this class. For example, a 'result' method is needed
+    #     to satisfy the interface of 'search.Problem'.
+    #
+    #     You are allowed (and encouraged) to use auxiliary functions and classes
 
-    # INIT (no default parameters)
+    
     def __init__(self, warehouse):
-        # initialise attributes (static ?)
         self.warehouse = warehouse
-
-        self.worker = warehouse.worker
-        self.boxes = warehouse.boxes
+        self.worker = tuple(warehouse.worker)
+        self.boxes = tuple(warehouse.boxes)
         self.targets = warehouse.targets
         self.walls = warehouse.walls
         self.weights = warehouse.weights
 
-        # initial state (dynamic elements)
-        self.initial = (self.worker, self.boxes)
+        self.initial = (self.worker, tuple(self.boxes))
 
-        # goal condition
         self.goal = self.targets
 
-    # ACTIONS
+
     def actions(self, state):
         """
         Return the list of actions that can be executed in the given state.
         
         """
+
         valid_actions = ['Left', 'Right', 'Up', 'Down']
         action_mapping = {'Left': (-1,0), 'Right': (1,0), 'Up': (0,-1), 'Down': (0,1)}
-        temp_warehouse = self.warehouse.copy(self.worker, self.boxes[:], self.weights)
+
+        temp_warehouse =self.warehouse.copy(self.warehouse.worker, self.warehouse.boxes[:], self.warehouse.weights)
         x, y = temp_warehouse.worker
 
         L = []  # list of legal actions
         for action in valid_actions:
-            x_new_worker, y_new_worker = x+action_mapping[action][0], y+action_mapping['Left'][1]
-            x_new_box, y_new_box = x_new_worker+action_mapping[action][0], y_new_worker+action_mapping['Left'][1]
-            
-            if (x_new_worker, y_new_worker) not in temp_warehouse.walls: # if new coordinates are a wall
+            x_new_worker, y_new_worker = x+action_mapping[action][0], y+action_mapping[action][1]
+            x_new_box, y_new_box = x_new_worker+action_mapping[action][0], y_new_worker+action_mapping[action][1]
+
+            if (x_new_worker, y_new_worker) not in temp_warehouse.walls:
                 if (x_new_worker, y_new_worker) in temp_warehouse.boxes: # if new coordinates are a box
-                    if (x_new_box, y_new_box) not in temp_warehouse.walls and (x_new_box, y_new_box) not in temp_warehouse.boxes: # if box is pushed into wall or another box, illegal action
+                    if (x_new_box, y_new_box) not in temp_warehouse.walls and (x_new_box, y_new_box) not in temp_warehouse.boxes:
                         L.append(action)
 
         return L
-        
-    # RESULT
+    
     def result(self, state, action):
         assert action in self.actions(state)  # defensive programming
 
@@ -322,13 +330,18 @@ class SokobanPuzzle(search.Problem):
         new_warehouse = check_elem_action_seq(self.warehouse, action_list) 
         new_warehouse = self.warehouse.from_string(new_warehouse) # check if this is correct
 
-        return tuple(new_warehouse.worker, new_warehouse.boxes)
+        return (new_warehouse.worker, tuple(new_warehouse.boxes))
     
-    # GOAL TEST
-    def goal_test(self, state):
-        return state == self.goal
 
-    # PATH COST
+    def goal_test(self, state):
+        goal_reached = True
+        for box in state[1]:
+            if box not in self.goal:
+                goal_reached = False
+        
+        return goal_reached
+        
+
     def path_cost(self, c, state1, action, state2):
         boxes1 = list(state1[1])
         boxes2 = list(state2[1])
@@ -346,23 +359,17 @@ class SokobanPuzzle(search.Problem):
                 weight = self.weights[idx]
                 c += weight
             # cost of moving worker
-            c =+ 1
+            c += 1
         else:
-            c =+ 1
+            c += 1
         
         return c
 
-    # HEURISTIC (manhattan distance)
-    box_dict = {}
-    # for i in range(len(boxes)):
-    #     box_dict.append({boxes[i]: weights[i])
+    # def value(self, state):
 
-
-    ### PRINT FUNCTIONS
-    # PRINT SOLUTION
-    # PRINT NODE
-    # PRINT STATE
-
+    def h(self, n):
+        return heuristic_function(self,n)
+        
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -462,8 +469,19 @@ def solve_weighted_sokoban(warehouse):
             C is the total cost of the action sequence C
 
     '''
+
+    sokoban_puzzle = SokobanPuzzle(warehouse)
+
+    solution_sokoban_puzzle = search.astar_graph_search(sokoban_puzzle)
+    print(solution_sokoban_puzzle)
+
+    if solution_sokoban_puzzle:
+        S = solution_sokoban_puzzle.solution()
+        C = solution_sokoban_puzzle.path_cost 
+    else:
+        return 'Impossible', None
     
-    raise NotImplementedError()
+    return S, C
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -488,3 +506,45 @@ def move_tuple_up(tup):
 def move_tuple_down(tup):
     return add_tuples(tup, (0,1))
 
+def manhattan_distance(coord1, coord2):
+    return abs(coord1[0] - coord2[0]) + abs(coord1[1] - coord2[1])
+
+def heuristic_function(self, n):
+    """
+    Heuristic function is manhattan distance between the boxes and the targets.
+    Each of the manhattan distances is multiplied by the box weights.
+    Add the shortest manhattan distance between the worker and the closest box.
+    """
+    # total value returned by the heuristic function
+    h_n = 0
+
+    # boxes
+    boxes = list(n.state[1])
+
+    # weights
+    weights = list(self.weights)
+
+    # targets
+    targets = list(self.goal)
+
+    # need to check that the number of boxes equals the number of targets
+    assert len(boxes) == len(targets)
+
+    # Compute the shortest distance between each box and its corresponding target
+    for box in boxes:
+        min_distance = float('inf')  # initialize with infinity
+        for target in targets:
+            distance = manhattan_distance(box, target)  # Manhattan distance
+            if distance < min_distance:
+                min_distance = distance
+        # try to multiply by the weight value
+        h_n += min_distance  # add the shortest distance to the total heuristic value
+
+    # worker position
+    worker = n.state[0]
+
+    # Add the shortest Manhattan distance between the worker and the closest box
+    min_worker_box_distance = min([manhattan_distance(box, worker) for box in boxes])
+    h_n += min_worker_box_distance
+
+    return h_n
