@@ -273,28 +273,96 @@ class SokobanPuzzle(search.Problem):
     the provided module 'search.py'. 
     
     '''
-    
-    #
-    #         "INSERT YOUR CODE HERE"
-    #
-    #     Revisit the sliding puzzle and the pancake puzzle for inspiration!
-    #
-    #     Note that you will need to add several functions to 
-    #     complete this class. For example, a 'result' method is needed
-    #     to satisfy the interface of 'search.Problem'.
-    #
-    #     You are allowed (and encouraged) to use auxiliary functions and classes
 
-    
+    # INIT (no default parameters)
     def __init__(self, warehouse):
-        raise NotImplementedError()
+        # initialise attributes (static ?)
+        self.warehouse = warehouse
 
+        self.worker = warehouse.worker
+        self.boxes = warehouse.boxes
+        self.targets = warehouse.targets
+        self.walls = warehouse.walls
+        self.weights = warehouse.weights
+
+        # initial state (dynamic elements)
+        self.initial = (self.worker, self.boxes)
+
+        # goal condition
+        self.goal = self.targets
+
+    # ACTIONS
     def actions(self, state):
         """
         Return the list of actions that can be executed in the given state.
         
         """
-        raise NotImplementedError
+        valid_actions = ['Left', 'Right', 'Up', 'Down']
+        action_mapping = {'Left': (-1,0), 'Right': (1,0), 'Up': (0,-1), 'Down': (0,1)}
+        temp_warehouse = self.warehouse.copy(self.worker, self.boxes[:], self.weights)
+        x, y = temp_warehouse.worker
+
+        L = []  # list of legal actions
+        for action in valid_actions:
+            x_new_worker, y_new_worker = x+action_mapping[action][0], y+action_mapping['Left'][1]
+            x_new_box, y_new_box = x_new_worker+action_mapping[action][0], y_new_worker+action_mapping['Left'][1]
+            
+            if (x_new_worker, y_new_worker) not in temp_warehouse.walls: # if new coordinates are a wall
+                if (x_new_worker, y_new_worker) in temp_warehouse.boxes: # if new coordinates are a box
+                    if (x_new_box, y_new_box) not in temp_warehouse.walls and (x_new_box, y_new_box) not in temp_warehouse.boxes: # if box is pushed into wall or another box, illegal action
+                        L.append(action)
+
+        return L
+        
+    # RESULT
+    def result(self, state, action):
+        assert action in self.actions(state)  # defensive programming
+
+        action_list = [action]
+        new_warehouse = check_elem_action_seq(self.warehouse, action_list) 
+        new_warehouse = self.warehouse.from_string(new_warehouse) # check if this is correct
+
+        return tuple(new_warehouse.worker, new_warehouse.boxes)
+    
+    # GOAL TEST
+    def goal_test(self, state):
+        return state == self.goal
+
+    # PATH COST
+    def path_cost(self, c, state1, action, state2):
+        boxes1 = list(state1[1])
+        boxes2 = list(state2[1])
+
+        # state 1 -> (action) -> state 2
+        if self.weights:
+            # cost of moving box
+            if boxes1 != boxes2: # box has been moved
+                idx = 0
+                for i in range(len(boxes1)):
+                    if boxes1[i] != boxes2[i]:
+                        idx = i # get the index of that box
+                        break
+                # get the corresponding weight of that box
+                weight = self.weights[idx]
+                c += weight
+            # cost of moving worker
+            c =+ 1
+        else:
+            c =+ 1
+        
+        return c
+
+    # HEURISTIC (manhattan distance)
+    box_dict = {}
+    # for i in range(len(boxes)):
+    #     box_dict.append({boxes[i]: weights[i])
+
+
+    ### PRINT FUNCTIONS
+    # PRINT SOLUTION
+    # PRINT NODE
+    # PRINT STATE
+
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -419,3 +487,4 @@ def move_tuple_up(tup):
 
 def move_tuple_down(tup):
     return add_tuples(tup, (0,1))
+
