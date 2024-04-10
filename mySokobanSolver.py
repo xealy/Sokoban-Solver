@@ -294,8 +294,10 @@ class SokobanPuzzle(search.Problem):
         self.walls = warehouse.walls
         self.weights = warehouse.weights
 
-        self.initial = (self.worker, tuple(self.boxes))
+        # initial state
+        self.initial = (self.worker, self.boxes)
 
+        # goal condition
         self.goal = self.targets
 
 
@@ -304,11 +306,10 @@ class SokobanPuzzle(search.Problem):
         Return the list of actions that can be executed in the given state.
         
         """
-
         valid_actions = ['Left', 'Right', 'Up', 'Down']
         action_mapping = {'Left': (-1,0), 'Right': (1,0), 'Up': (0,-1), 'Down': (0,1)}
 
-        temp_warehouse =self.warehouse.copy(self.warehouse.worker, self.warehouse.boxes[:], self.warehouse.weights)
+        temp_warehouse = self.warehouse.copy(state[0], state[1], self.weights)
         x, y = temp_warehouse.worker
 
         L = []  # list of legal actions
@@ -320,17 +321,22 @@ class SokobanPuzzle(search.Problem):
                 if (x_new_worker, y_new_worker) in temp_warehouse.boxes: # if new coordinates are a box
                     if (x_new_box, y_new_box) not in temp_warehouse.walls and (x_new_box, y_new_box) not in temp_warehouse.boxes:
                         L.append(action)
+                else:
+                    L.append(action)
 
+        print(L)
         return L
     
     def result(self, state, action):
         assert action in self.actions(state)  # defensive programming
 
         action_list = [action]
-        new_warehouse = check_elem_action_seq(self.warehouse, action_list) 
-        new_warehouse = self.warehouse.from_string(new_warehouse) # check if this is correct
 
-        return (new_warehouse.worker, tuple(new_warehouse.boxes))
+        # new_warehouse = check_elem_action_seq(self.warehouse, action_list) 
+        # new_warehouse = self.warehouse.from_string(new_warehouse) # check if this is correct
+        new_state = check_elem_action_seq(self.warehouse, action_list) 
+
+        return (new_state[0], new_state[1])
     
 
     def goal_test(self, state):
@@ -369,10 +375,10 @@ class SokobanPuzzle(search.Problem):
 
     def h(self, n):
         return heuristic_function(self,n)
-        
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+# NEW
 def check_elem_action_seq(warehouse, action_seq):
     '''
     Determine if the sequence of actions listed in 'action_seq' is legal or not.
@@ -424,24 +430,99 @@ def check_elem_action_seq(warehouse, action_seq):
         x_new_box, y_new_box = x_new_worker+action_mapping[action][0], y_new_worker+action_mapping[action][1]
 
         if (x_new_worker, y_new_worker) in temp_warehouse.walls: # if new coordinates are a wall
-            return impossible_string # Failed: player is blocked
-            
+            return impossible_string # Failed: player is blocked  
+
         if (x_new_worker, y_new_worker) in temp_warehouse.boxes: # if new coordinates are a box
             if (x_new_box, y_new_box) not in temp_warehouse.walls and (x_new_box, y_new_box) not in temp_warehouse.boxes: # if box is pushed into wall or another box, illegal action
-                temp_warehouse.boxes.remove((x_new_worker, y_new_worker))
-                temp_warehouse.boxes.append((x_new_box, y_new_box))
+                worker_index = temp_warehouse.boxes.index((x_new_worker, y_new_worker)) # find index of new worker coords in 'boxes'
+                temp_warehouse.boxes.pop(worker_index) # remove the new worker coords
+                temp_warehouse.boxes.insert(worker_index, (x_new_box, y_new_box)) # insert the new box at the same index
                 y = y_new_worker # Successful: can move the worker + box, update with new y coordinate
                 x = x_new_worker # Successful: can move the worker + box, update with new x coordinate
             else:
                 return impossible_string # Failed: box is blocked, either pushed box into a wall or into another box
         else: 
             y = y_new_worker 
-            x = x_new_worker   
+            x = x_new_worker 
     
     # Update worker location at the end of action sequence (with latest location)
     temp_warehouse.worker = x, y
 
-    return temp_warehouse.__str__()
+    return (temp_warehouse.worker, tuple(temp_warehouse.boxes))
+    # return temp_warehouse.__str__()     
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# ORIGINAL
+# def check_elem_action_seq(warehouse, action_seq):
+#     '''
+#     Determine if the sequence of actions listed in 'action_seq' is legal or not.
+    
+#     Important notes:
+#       - a legal sequence of actions does not necessarily solve the puzzle.
+#       - an action is legal even if it pushes a box onto a taboo cell.
+        
+#     @param warehouse: a valid Warehouse object
+
+#     @param action_seq: a sequence of legal actions.
+#            For example, ['Left', 'Down', Down','Right', 'Up', 'Down']
+           
+#     @return
+#         The string 'Impossible', if one of the action was not valid.
+#            For example, if the agent tries to push two boxes at the same time,
+#                         or push a box into a wall.
+#         Otherwise, if all actions were successful, return                 
+#                A string representing the state of the puzzle after applying
+#                the sequence of actions.  This must be the same string as the
+#                string returned by the method Warehouse.__str__()
+#     '''
+#     ##         "INSERT YOUR CODE HERE"
+    
+#     # Get location of Worker (warehouse.worker)
+
+#     valid_actions = ['Left', 'Right', 'Up', 'Down']
+#     action_mapping = {'Left': (-1,0), 'Right': (1,0), 'Up': (0,-1), 'Down': (0,1)}
+
+#     # Get location of Worker (warehouse.worker)
+#     temp_warehouse =warehouse.copy(warehouse.worker, warehouse.boxes[:], warehouse.weights)
+#     x, y = temp_warehouse.worker
+#     impossible_string = 'Impossible'
+
+#     # if there are no actions in the list, return the warehouse unchanged 
+#     if len(action_seq) == 0:
+#         print('Nothing')
+#         return temp_warehouse.__str__()
+
+#     # loop through each action in action_seq to check if valid
+#     for action in action_seq:
+
+#         # Impossible if action is not valid
+#         if action not in valid_actions:
+#             return impossible_string
+    
+#         print(action)
+#         x_new_worker, y_new_worker = x+action_mapping[action][0], y+action_mapping[action][1]
+#         x_new_box, y_new_box = x_new_worker+action_mapping[action][0], y_new_worker+action_mapping[action][1]
+
+#         if (x_new_worker, y_new_worker) in temp_warehouse.walls: # if new coordinates are a wall
+#             return impossible_string # Failed: player is blocked
+            
+#         if (x_new_worker, y_new_worker) in temp_warehouse.boxes: # if new coordinates are a box
+#             if (x_new_box, y_new_box) not in temp_warehouse.walls and (x_new_box, y_new_box) not in temp_warehouse.boxes: # if box is pushed into wall or another box, illegal action
+#                 temp_warehouse.boxes.remove((x_new_worker, y_new_worker))
+#                 temp_warehouse.boxes.append((x_new_box, y_new_box))
+#                 y = y_new_worker # Successful: can move the worker + box, update with new y coordinate
+#                 x = x_new_worker # Successful: can move the worker + box, update with new x coordinate
+#             else:
+#                 return impossible_string # Failed: box is blocked, either pushed box into a wall or into another box
+#         else: 
+#             y = y_new_worker 
+#             x = x_new_worker   
+    
+#     # Update worker location at the end of action sequence (with latest location)
+#     temp_warehouse.worker = x, y
+
+#     return temp_warehouse.__str__()
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -506,8 +587,15 @@ def move_tuple_up(tup):
 def move_tuple_down(tup):
     return add_tuples(tup, (0,1))
 
+# def manhattan_distance(coord1, coord2):
+#     return abs(coord1[0] - coord2[0]) + abs(coord1[1] - coord2[1])
+
 def manhattan_distance(coord1, coord2):
-    return abs(coord1[0] - coord2[0]) + abs(coord1[1] - coord2[1])
+    print(coord1)
+    print(coord2)
+    x1, y1 = map(int, coord1)
+    x2, y2 = map(int, coord2)
+    return abs(x1 - x2) + abs(y1 - y2)
 
 def heuristic_function(self, n):
     """
@@ -528,7 +616,7 @@ def heuristic_function(self, n):
     targets = list(self.goal)
 
     # need to check that the number of boxes equals the number of targets
-    assert len(boxes) == len(targets)
+    # assert len(boxes) == len(targets)
 
     # Compute the shortest distance between each box and its corresponding target
     for box in boxes:
