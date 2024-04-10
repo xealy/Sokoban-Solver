@@ -16,6 +16,7 @@ marking your code, make sure that your code runs without errors with this script
 
 
 from sokoban import Warehouse
+import random, time
 
 
 try:
@@ -87,13 +88,54 @@ def test_solve_weighted_sokoban():
         print('Your answer is different but it might still be correct')
         print('Check that you pushed the right box onto the left target!')
     print(f'Your cost = {cost}, expected cost = {expected_cost}')
+
+def test_solve_weighted_sokoban2():
+    wh = Warehouse()    
+    wh.load_warehouse( "./warehouses/warehouse_09.txt")
+    # first test
+    answer, cost = solve_weighted_sokoban(wh)
+
+    expected_answer = ['Up', 'Right', 'Right', 'Down', 'Up', 'Left', 'Left', 'Down', 'Right', 'Down', 'Right', 'Left', 'Up', 'Up', 'Right', 'Down', 'Right', 'Down', 'Down', 'Left', 'Up', 'Right', 'Up', 'Left', 'Down', 'Left', 'Up', 'Right', 'Up', 'Left']
+    expected_cost = 396
+    print('<<  test_solve_weighted_sokoban >>')
+    if answer==expected_answer:
+        print(' Answer as expected!  :-)\n')
+    else:
+        print('unexpected answer!  :-(\n')
+        print('Expected ');print(expected_answer)
+        print('But, received ');print(answer)
+        print('Your answer is different but it might still be correct')
+        print('Check that you pushed the right box onto the left target!')
+    print(f'Your cost = {cost}, expected cost = {expected_cost}')
+
+def test_solve_weighted_sokoban3():
+    wh = Warehouse()    
+    wh.load_warehouse( "./warehouses/warehouse_147.txt")
+    # first test
+    answer, cost = solve_weighted_sokoban(wh)
+
+    expected_answer = ['Left', 'Left', 'Left', 'Left', 'Left', 'Left', 'Down', 'Down', 'Down', 'Right', 'Right', 'Up', 'Right', 'Down', 'Right', 'Down', 'Down', 'Left', 'Down', 'Left', 'Left', 'Up', 'Up', 'Down', 'Down', 'Right', 'Right', 'Up', 'Right', 'Up', 'Up', 'Left', 'Left', 'Left', 'Down', 'Left', 'Up', 'Up', 'Up', 'Left', 'Up', 'Right', 'Right', 'Right', 'Right', 'Right', 'Right', 'Down', 'Right', 'Right', 'Right', 'Up', 'Up', 'Left', 'Left', 'Down', 'Left', 'Left', 'Left', 'Left', 'Left', 'Left', 'Down', 'Down', 'Down', 'Right', 'Right', 'Up', 'Left', 'Down', 'Left', 'Up', 'Up', 'Left', 'Up', 'Right', 'Right', 'Right', 'Right', 'Right', 'Right', 'Left', 'Left', 'Left', 'Left', 'Left', 'Down', 'Down', 'Down', 'Down', 'Right', 'Down', 'Down', 'Right', 'Right', 'Up', 'Up', 'Right', 'Up', 'Left', 'Left', 'Left', 'Down', 'Left', 'Up', 'Up', 'Up', 'Left', 'Up', 'Right', 'Right', 'Right', 'Right', 'Right', 'Down', 'Right', 'Down', 'Right', 'Right', 'Up', 'Left', 'Right', 'Right', 'Up', 'Up', 'Left', 'Left', 'Down', 'Left', 'Left', 'Left', 'Left', 'Left', 'Left', 'Right', 'Right', 'Right', 'Right', 'Right', 'Right', 'Up', 'Right', 'Right', 'Down', 'Down', 'Left', 'Down', 'Left', 'Left', 'Up', 'Right', 'Right', 'Down', 'Right', 'Up', 'Left', 'Left', 'Up', 'Left', 'Left']
+    expected_cost = 521
+    print('<<  test_solve_weighted_sokoban >>')
+    if answer==expected_answer:
+        print(' Answer as expected!  :-)\n')
+    else:
+        print('unexpected answer!  :-(\n')
+        print('Expected ');print(expected_answer)
+        print('But, received ');print(answer)
+        print('Your answer is different but it might still be correct')
+        print('Check that you pushed the right box onto the left target!')
+    print(f'Your cost = {cost}, expected cost = {expected_cost}')
         
     
 
 if __name__ == "__main__":
     pass    
-    print(my_team())
-    test_taboo_cells()
-    test_check_elem_action_seq()
-    # test_solve_weighted_sokoban()
+    #print(my_team())
+    #test_taboo_cells()
+    #test_check_elem_action_seq()
+    t0 = time.time()
+    test_solve_weighted_sokoban2()
+    t1 = time.time()
+    print(t1-t0)
     # print("Hello")
