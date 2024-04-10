@@ -31,6 +31,7 @@ Last modified by 2022-03-27  by f.maire@qut.edu.au
 # with these files
 import search 
 import sokoban
+import math
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -137,7 +138,7 @@ def taboo_cells(warehouse):
                         if is_corner(warehouse_list, r, c):
                             warehouse_list[r][c] = 'X'
 
-        def inside_warehouse(warehouse):
+        def inside_warehouse(warehouse, warehouse_list):
             # know that position of worker in the start must be inside the warehouse
             cells_inside_warehouse = []
             worker = tuple_swap(warehouse.worker)
@@ -160,7 +161,7 @@ def taboo_cells(warehouse):
                                 boundary.append((inside[0] + d[0], inside[1] + d[1]))
             return cells_inside_warehouse
     
-    cells_inside_warehouse = inside_warehouse(warehouse)
+    cells_inside_warehouse = inside_warehouse(warehouse, warehouse_list)
 
 
     '''implementing rule 2'''
@@ -216,9 +217,11 @@ def taboo_cells(warehouse):
                     if warehouse_list_2[r_1][c] in target_cells:
                         break
                     # if we hit a wall cell then the taboo cell was not
-                    # a corner cell 
+                    # a corner cell or all cells between should not be taboo
                     elif warehouse_list_2[r_1][c] == '#':
                         break
+                    # if we hit an empty cell, we could be along a wall between two taboo cells
+                    # so want to continue searching
                     elif warehouse_list_2[r_1][c] == ' ':
                         empty_cell_count += 1
                         continue
@@ -249,12 +252,13 @@ def taboo_cells(warehouse):
 
     warehouse_list = implement_rule_2(warehouse_list)
             
-    '''Converting warehouse representation back into string format'''
+    # Converting warehouse representation back into string format
     warehouse_string = ""
     for line in warehouse_list:
         warehouse_string += ''.join(line) + '\n'
     warehouse_string = warehouse_string.rstrip('\n')
     
+    # now remove target cells
     for cell in target_cells:
         warehouse_string = warehouse_string.replace(cell, ' ')
     
@@ -290,13 +294,22 @@ class SokobanPuzzle(search.Problem):
         self.warehouse = warehouse
         self.worker = tuple(warehouse.worker)
         self.boxes = tuple(warehouse.boxes)
-        self.targets = warehouse.targets
+        self.targets = tuple(warehouse.targets)
         self.walls = warehouse.walls
         self.weights = warehouse.weights
 
-        self.initial = (self.worker, tuple(self.boxes))
+        self.initial = (self.worker, self.boxes)
 
         self.goal = self.targets
+        
+        temp_warehouse_taboo_check = taboo_cells(warehouse)
+        warehouse_list_taboo_check = []
+        for row in temp_warehouse_taboo_check.split('\n'):
+            warehouse_list_taboo_check.append(list(row))
+
+        self.taboo_cells = warehouse_list_taboo_check
+
+        
 
 
     def actions(self, state):
@@ -308,29 +321,57 @@ class SokobanPuzzle(search.Problem):
         valid_actions = ['Left', 'Right', 'Up', 'Down']
         action_mapping = {'Left': (-1,0), 'Right': (1,0), 'Up': (0,-1), 'Down': (0,1)}
 
-        temp_warehouse =self.warehouse.copy(self.warehouse.worker, self.warehouse.boxes[:], self.warehouse.weights)
-        x, y = temp_warehouse.worker
+        # temp_warehouse =self.warehouse.copy(state[0], state.boxes[:], self.warehouse.weights)
+        temp_warehouse = self.warehouse.copy(state[0], state[1], self.warehouse.weights)
+        x, y = state[0]
+
+
+        # print(warehouse_list_taboo_check)
 
         L = []  # list of legal actions
         for action in valid_actions:
             x_new_worker, y_new_worker = x+action_mapping[action][0], y+action_mapping[action][1]
             x_new_box, y_new_box = x_new_worker+action_mapping[action][0], y_new_worker+action_mapping[action][1]
+            
+            # temp_worker_pos = tuple_swap((x_new_worker, y_new_worker))
+            # temp_box_pos = tuple_swap((x_new_box, y_new_box))
+
+            # print(warehouse_list_taboo_check[temp_box_pos[0]][temp_box_pos[1]])
+
 
             if (x_new_worker, y_new_worker) not in temp_warehouse.walls:
                 if (x_new_worker, y_new_worker) in temp_warehouse.boxes: # if new coordinates are a box
-                    if (x_new_box, y_new_box) not in temp_warehouse.walls and (x_new_box, y_new_box) not in temp_warehouse.boxes:
-                        L.append(action)
+                    if self.taboo_cells[y_new_box][x_new_box] != 'X':
+                        if (x_new_box, y_new_box) not in temp_warehouse.walls and (x_new_box, y_new_box) not in temp_warehouse.boxes:
+                            L.append(action)
+                else:
+                    L.append(action)
 
         return L
     
     def result(self, state, action):
         assert action in self.actions(state)  # defensive programming
 
-        action_list = [action]
-        new_warehouse = check_elem_action_seq(self.warehouse, action_list) 
-        new_warehouse = self.warehouse.from_string(new_warehouse) # check if this is correct
+        action_mapping = {'Left': (-1,0), 'Right': (1,0), 'Up': (0,-1), 'Down': (0,1)}
+        boxes = list(state[1])
 
-        return (new_warehouse.worker, tuple(new_warehouse.boxes))
+        # action_list = [action]
+        # new_warehouse = check_elem_action_seq(self.warehouse, action_list) 
+        # new_warehouse = self.warehouse.from_string(new_warehouse) # check if this is correct
+
+        # return (new_warehouse.worker, tuple(new_warehouse.boxes))
+
+        worker_position = add_tuples(state[0], action_mapping[action])
+        if worker_position in boxes:
+            box_position = add_tuples(worker_position, action_mapping[action])
+            worker_index = boxes.index(worker_position)
+            boxes.pop(worker_index)
+            boxes.insert(worker_index, box_position)
+        else:
+            # if box not moved, return new position of worker 
+            return (worker_position, tuple(boxes))
+        
+        return (worker_position, tuple(boxes))
     
 
     def goal_test(self, state):
@@ -338,7 +379,6 @@ class SokobanPuzzle(search.Problem):
         for box in state[1]:
             if box not in self.goal:
                 goal_reached = False
-        
         return goal_reached
         
 
@@ -349,26 +389,29 @@ class SokobanPuzzle(search.Problem):
         # state 1 -> (action) -> state 2
         if self.weights:
             # cost of moving box
-            if boxes1 != boxes2: # box has been moved
-                idx = 0
-                for i in range(len(boxes1)):
-                    if boxes1[i] != boxes2[i]:
-                        idx = i # get the index of that box
-                        break
+            idx = None
+            for i in range(len(boxes1)):
+                if boxes1[i] != boxes2[i]:
+                    idx = i # get the index of that box
+                    break
+            if idx != None:
+                # enters here if box has changed position from state1 to state2, this means box is moved
                 # get the corresponding weight of that box
+                # cost of moving box
                 weight = self.weights[idx]
                 c += weight
             # cost of moving worker
             c += 1
         else:
+            # boxes don't have weights, so cost of moving (even if you also move a box) is only cost of moving worker
             c += 1
-        
+        # return the total path cost
         return c
 
-    # def value(self, state):
 
     def h(self, n):
         return heuristic_function(self,n)
+        # return 0
         
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -397,7 +440,6 @@ def check_elem_action_seq(warehouse, action_seq):
     '''
     ##         "INSERT YOUR CODE HERE"
     
-    # Get location of Worker (warehouse.worker)
 
     valid_actions = ['Left', 'Right', 'Up', 'Down']
     action_mapping = {'Left': (-1,0), 'Right': (1,0), 'Up': (0,-1), 'Down': (0,1)}
@@ -470,8 +512,10 @@ def solve_weighted_sokoban(warehouse):
 
     '''
 
+
     sokoban_puzzle = SokobanPuzzle(warehouse)
 
+    # returns a node object if there is a solution and None if there is not
     solution_sokoban_puzzle = search.astar_graph_search(sokoban_puzzle)
     print(solution_sokoban_puzzle)
 
@@ -494,17 +538,17 @@ def add_tuples(tup1, tup2):
     c,d = tup2[0], tup2[1]
     return (a+c,b+d)
 
-def move_tuple_left(tup):
-    return add_tuples(tup, (-1,0))
+# def move_tuple_left(tup):
+#     return add_tuples(tup, (-1,0))
 
-def move_tuple_right(tup):
-    return add_tuples(tup, (1,0))
+# def move_tuple_right(tup):
+#     return add_tuples(tup, (1,0))
 
-def move_tuple_up(tup):
-    return add_tuples(tup, (0,-1))
+# def move_tuple_up(tup):
+#     return add_tuples(tup, (0,-1))
 
-def move_tuple_down(tup):
-    return add_tuples(tup, (0,1))
+# def move_tuple_down(tup):
+#     return add_tuples(tup, (0,1))
 
 def manhattan_distance(coord1, coord2):
     return abs(coord1[0] - coord2[0]) + abs(coord1[1] - coord2[1])
@@ -532,20 +576,22 @@ def heuristic_function(self, n):
 
     # Compute the shortest distance between each box and its corresponding target
     for box in boxes:
-        min_distance = float('inf')  # initialize with infinity
+        minimum_distance = float('inf')  # initialize with infinity
         for target in targets:
-            distance = manhattan_distance(box, target)  # Manhattan distance
-            if distance < min_distance:
-                min_distance = distance
-        # try to multiply by the weight value
-        h_n += min_distance  # add the shortest distance to the total heuristic value
+            distance = abs(box[0] - target[0]) + abs(box[1] - target[1]) # Manhattan distance
+            if distance < minimum_distance:
+                minimum_distance = distance
+        # multiply by the weight value
+        idx = boxes.index(box)
+        weight = weights[idx]
+        h_n += minimum_distance # add the shortest distance to the total heuristic value
 
     # worker position
     worker = n.state[0]
 
-    # Add the shortest Manhattan distance between the worker and the closest box
-    min_worker_box_distance = min([manhattan_distance(box, worker) for box in boxes])
-    h_n += min_worker_box_distance
+    # Add the shortest euclidean distance between the worker and the closest box
+    #minimum_worker_box_distance = min([math.sqrt((box[0] - worker[0])**2 + (box[1] - worker[1])**2) for box in boxes])
+    #h_n += minimum_worker_box_distance
 
     return h_n
 
