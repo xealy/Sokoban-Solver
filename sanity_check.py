@@ -181,7 +181,7 @@ if __name__ == "__main__":
     #test_taboo_cells()
     # test_check_elem_action_seq_2()
     t0 = time.time()
-    test_solve_weighted_sokoban4()
+    test_solve_weighted_sokoban3()
     t1 = time.time()
     print(t1-t0)
     # print("Hello")

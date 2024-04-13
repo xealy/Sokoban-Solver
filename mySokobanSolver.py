@@ -101,6 +101,8 @@ def taboo_cells(warehouse):
         if warehouse_list[r][c] not in target_cells and check_corner(warehouse_list, r, c) == True:
             # if so, mark as a taboo cell
             warehouse_list[r][c] = 'X'
+
+
     # create copy of warehouse list representation for comparison
     warehouse_list_temp = warehouse_list.copy()
 
@@ -140,10 +142,18 @@ def taboo_cells(warehouse):
                         # are only walls
 
                         # check only walls above
-                        only_walls_above = all([cell == '#' for cell in warehouse_list[r+1][c:c_1]])
-                            
+                        only_walls_above = True
+                        for cell in warehouse_list[r+1][c:c_1]:
+                            if cell != '#':
+                                only_walls_above = False
+                                break
+
                         # check only walls below
-                        only_walls_below = all([cell == '#' for cell in warehouse_list[r-1][c:c_1]])
+                        only_walls_below = True
+                        for cell in warehouse_list[r-1][c:c_1]:
+                            if cell != '#':
+                                only_walls_below = False
+                                break
                         
                         # if there are only walls either above or below
                         if only_walls_above or only_walls_below:
@@ -475,10 +485,10 @@ class SokobanPuzzle(search.Problem):
         assert len(boxes) == len(targets)
 
         # store minimum manhattan distance from each box to a target
-        min_distances = []
+        minimum_distances = []
         for box in boxes:
-            min_distance = min(abs(box[0] - target[0]) + abs(box[1] - target[1]) for target in targets)
-            min_distances.append(min_distance)
+            minimum_distance = min(abs(box[0] - target[0]) + abs(box[1] - target[1]) for target in targets)
+            minimum_distances.append(minimum_distance)
 
         # find corresponding weight of each box
         # multiply this by the minimum manhattan distance of that box to a target
@@ -486,9 +496,9 @@ class SokobanPuzzle(search.Problem):
         for idx in range(len(boxes)):
             # if the weight is 0 
             if weights[idx] == 0:
-               h_n += min_distances[idx]
+               h_n += minimum_distances[idx]
             else:
-                h_n += min_distances[idx] * weights[idx]
+                h_n += minimum_distances[idx] * weights[idx]
 
         # worker position
         worker = n.state[0]
@@ -537,7 +547,6 @@ def check_elem_action_seq(warehouse, action_seq):
 
     # if there are no actions in the list, return the warehouse unchanged 
     if len(action_seq) == 0:
-        print('Nothing')
         return temp_warehouse.__str__()
 
     # loop through each action in action_seq to check if valid
@@ -554,7 +563,7 @@ def check_elem_action_seq(warehouse, action_seq):
             return impossible_string # Failed: player is blocked
             
         if (x_new_worker, y_new_worker) in temp_warehouse.boxes: # if new coordinates are a box
-            if (x_new_box, y_new_box) not in temp_warehouse.walls and (x_new_box, y_new_box) not in temp_warehouse.boxes: # if box is pushed into wall or another box, illegal action
+            if (x_new_box, y_new_box) not in temp_warehouse.boxes and (x_new_box, y_new_box) not in temp_warehouse.walls: # if box is pushed into wall or another box, illegal action
                 temp_warehouse.boxes.remove((x_new_worker, y_new_worker))
                 temp_warehouse.boxes.append((x_new_box, y_new_box))
                 y = y_new_worker # Successful: can move the worker + box, update with new y coordinate
