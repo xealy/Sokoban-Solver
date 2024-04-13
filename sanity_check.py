@@ -65,6 +65,31 @@ def test_check_elem_action_seq():
         print('Expected ');print(expected_answer)
         print('But, received ');print(answer)
 
+def test_check_elem_action_seq_2():
+    wh = Warehouse()
+    wh.load_warehouse("./warehouses/warehouse_01.txt")
+    # first test
+    answer = check_elem_action_seq(wh, ['Right', 'Right','Down','Left'])
+    expected_answer = '####  \n# .#  \n#  ###\n#*   #\n# $@ #\n#  ###\n####  '
+    print('<<  check_elem_action_seq, test 1>>')
+    if answer==expected_answer:
+        print('Test 1 passed!  :-)\n')
+    else:
+        print('Test 1 failed!  :-(\n')
+        print('Expected ');print(expected_answer)
+        print('But, received ');print(answer)
+    # second test
+    answer = check_elem_action_seq(wh, ['Right', 'Right','Right'])
+    expected_answer = 'Impossible'
+    print('<<  check_elem_action_seq, test 2>>')
+    if answer==expected_answer:
+        print('Test 2 passed!  :-)\n')
+    else:
+        print('Test 2 failed!  :-(\n')
+        print('Expected ');print(expected_answer)
+        print('But, received ');print(answer)
+
+
 
 
 def test_solve_weighted_sokoban():
@@ -154,9 +179,9 @@ if __name__ == "__main__":
     pass    
     #print(my_team())
     #test_taboo_cells()
-    #test_check_elem_action_seq()
+    # test_check_elem_action_seq_2()
     t0 = time.time()
-    test_solve_weighted_sokoban2()
+    test_solve_weighted_sokoban4()
     t1 = time.time()
     print(t1-t0)
     # print("Hello")
