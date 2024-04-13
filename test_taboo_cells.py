@@ -41,4 +41,4 @@ if __name__ == "__main__":
     
 #    print(my_team())  # should print your team
 
-    test_taboo_cells_2() 
+    test_taboo_cells() 
