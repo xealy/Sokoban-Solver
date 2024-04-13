@@ -126,6 +126,27 @@ def test_solve_weighted_sokoban3():
         print('Your answer is different but it might still be correct')
         print('Check that you pushed the right box onto the left target!')
     print(f'Your cost = {cost}, expected cost = {expected_cost}')
+
+
+def test_solve_weighted_sokoban4():
+    wh = Warehouse()    
+    wh.load_warehouse( "/Users/alexandraaxcrona/Desktop/CAB320_a1/SokobanSolver/warehouses/warehouse_07.txt")
+    # first test
+    answer, cost = solve_weighted_sokoban(wh)
+
+    expected_answer = ['Up', 'Up', 'Right', 'Right', 'Up', 'Up', 'Left', 'Left', 'Down', 'Down', 'Right', 'Up', 'Down', 'Right', 'Down', 'Down', 'Left', 'Up', 'Down', 'Left', 'Left', 'Up', 'Left', 'Up', 'Up', 'Right']
+
+    expected_cost = 26
+    print('<<  test_solve_weighted_sokoban >>')
+    if answer==expected_answer:
+        print(' Answer as expected!  :-)\n')
+    else:
+        print('unexpected answer!  :-(\n')
+        print('Expected ');print(expected_answer)
+        print('But, received ');print(answer)
+        print('Your answer is different but it might still be correct')
+        print('Check that you pushed the right box onto the left target!')
+    print(f'Your cost = {cost}, expected cost = {expected_cost}')
         
     
 

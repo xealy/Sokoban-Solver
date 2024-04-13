@@ -72,7 +72,7 @@ def taboo_cells(warehouse):
        The returned string should NOT have marks for the worker, the targets,
        and the boxes.  
     '''
-    ##         "INSERT YOUR CODE HERE"    
+
     # lists of cell types useful for later
     target_cells = ['!', '.', '*']
     cells_to_remove = ['@', '$']
@@ -95,162 +95,101 @@ def taboo_cells(warehouse):
     But remember that cell also has to be INSIDE for it to be taboo
     '''
 
-    def is_corner(warehouse, r, c):
-        nr_walls_left_right = 0
-        nr_walls_up_down = 0
+    cells_inside_warehouse = get_inside_warehouse_cells(warehouse, warehouse_list)
 
-        '''Checking for walls left and right'''
-        if warehouse[r][c + 1] == '#':
-            nr_walls_left_right += 1 
-        if warehouse[r][c - 1] == '#':
-            nr_walls_left_right += 1 
+    for position in cells_inside_warehouse:
+        r = position[0]
+        c = position[1]
+        if warehouse_list[r][c] not in target_cells and check_corner(warehouse_list, r, c) == True:
+            warehouse_list[r][c] = 'X'
 
-        '''Checking for walls up and down'''
-        if warehouse[r + 1][c] == '#':
-                nr_walls_up_down += 1 
-        if warehouse[r - 1][c] == '#':
-                nr_walls_up_down += 1 
+    warehouse_list_temp = warehouse_list.copy()
 
-        if (nr_walls_left_right >= 1 and nr_walls_up_down >= 1):
-            return True
-        else:
-            return False
-
-    '''implementing rule 1'''
-    for r in range(len(warehouse_list)-1):
-        inside_warehouse = False
-        for c in range(len(warehouse_list[0])-1):
-            if not inside_warehouse:
-                if warehouse_list[r][c] == '#':
-                    inside_warehouse = True
-            else:
-                all_empty = True
-                for cell in warehouse_list[r][c:]:
-                    if cell != ' ':
-                        all_empty = False
-                        break
-                if all_empty:
+    for (r,c) in cells_inside_warehouse:
+        # iterate over all cells inside the warehouse
+        # only cells inside the warehouse can become taboo cells
+        # print(warehouse_list_temp[r][c] == 'X')
+        if warehouse_list[r][c] == 'X':
+            # check horisontally if we have two taboo corner cells with 
+            # spaces in between
+            empty_cell_count = 0
+            for c_1 in range(c+1,len(warehouse_list[0])-1):
+                if (r,c_1) not in cells_inside_warehouse:
                     break
+                # if cell in row is a target cell 
+                # all cells in between two taboo corners should not be taboo
+                elif warehouse_list[r][c_1] in target_cells:
+                    break
+                # if we hit a wall cell then the taboo cell was not
+                # a corner cell 
+                elif warehouse_list[r][c_1] == '#':
+                    break
+                elif warehouse_list[r][c_1] == ' ':
+                    empty_cell_count += 1
+                    continue
+                elif warehouse_list[r][c_1] == 'X':
+                    if empty_cell_count != 0:
+                        # Check if there is wall on the columns directly either up or down
+                        # of the column containing the taboo cells, between the two taboo cells.
+                        # Must be at least one empty cell between the two taboo cells in order to 
+                        # add taboo cells between them.
 
-                cell = warehouse_list[r][c]
-                if cell not in target_cells:
-                    if cell != '#':
-                        if is_corner(warehouse_list, r, c):
-                            warehouse_list[r][c] = 'X'
-
-        def inside_warehouse(warehouse, warehouse_list):
-            # know that position of worker in the start must be inside the warehouse
-            cells_inside_warehouse = []
-            worker = tuple_swap(warehouse.worker)
-            cells_inside_warehouse.append(worker)
-            boundary = []
-            
-            directions = [(0,1), (0,-1), (1,0), (-1,0)]
-
-            for d in directions:
-                if warehouse_list[worker[0] + d[0]][worker[1] + d[1]] != '#':
-                    boundary.append((worker[0] + d[0],worker[1] + d[1]))
-
-            while len(boundary) != 0:
-                inside = boundary.pop(0)
-                cells_inside_warehouse.append(inside)
-                for d in directions:
-                    if warehouse_list[inside[0] + d[0]][inside[1] + d[1]] != '#':
-                        if (inside[0] + d[0], inside[1] + d[1]) not in boundary:
-                            if (inside[0] + d[0], inside[1] + d[1]) not in cells_inside_warehouse:
-                                boundary.append((inside[0] + d[0], inside[1] + d[1]))
-            return cells_inside_warehouse
+                        # check only walls above
+                        only_walls_above = all([cell == '#' for cell in warehouse_list[r+1][c:c_1]])
+                            
+                        # check only walls below
+                        only_walls_below = all([cell == '#' for cell in warehouse_list[r-1][c:c_1]])
+                        
+                        if only_walls_above or only_walls_below:
+                            for c_2 in range(c+1,c_1):
+                                warehouse_list_temp[r][c_2] = 'X'
+                            break
     
-    cells_inside_warehouse = inside_warehouse(warehouse, warehouse_list)
 
+            # check vertically if we have two taboo corner cells with 
+            # spaces in between
+            empty_cell_count = 0
+            for r_1 in range(r+1,len(warehouse_list)-1):
+                if (r_1,c) not in cells_inside_warehouse:
+                    break
+                # if cell in row is a target cell 
+                # all cells in between two taboo corners should not be taboo
+                elif warehouse_list[r_1][c] in target_cells:
+                    break
+                # if we hit a wall cell then the taboo cell was not
+                # a corner cell or all cells between should not be taboo
+                elif warehouse_list[r_1][c] == '#':
+                    break
+                # if we hit an empty cell, we could be along a wall between two taboo cells
+                # so want to continue searching
+                elif warehouse_list[r_1][c] == ' ':
+                    empty_cell_count += 1
+                    continue
+                elif warehouse_list[r_1][c] == 'X':
+                    if empty_cell_count != 0:
+                        # Check if there is wall on the columns directly either the left or right
+                        # of the column containing the taboo cells, between the two taboo cells.
+                        # Must be at least one empty cell between the two taboo cells in order to 
+                        # add taboo cells between them.
 
-    '''implementing rule 2'''
-    # cell can be target cell, blank cell, wall cell or another taboo cell
-    warehouse_list_temp = warehouse_list
-    def implement_rule_2(warehouse_list_2):
-        for (r,c) in cells_inside_warehouse:
-            # iterate over all cells inside the warehouse
-            # only cells inside the warehouse can become taboo cells
-            if warehouse_list_2[r][c] == 'X':
-                # check horisontally if we have two taboo corner cells with 
-                # spaces in between
-                empty_cell_count = 0
-                for c_1 in range(c+1,len(warehouse_list_2[0])-1):
-                    # if cell in row is a target cell 
-                    # all cells in between two taboo corners should not be taboo
-                    if warehouse_list_2[r][c_1] in target_cells:
-                        break
-                    # if we hit a wall cell then the taboo cell was not
-                    # a corner cell 
-                    elif warehouse_list_2[r][c_1] == '#':
-                        break
-                    elif warehouse_list_2[r][c_1] == ' ':
-                        empty_cell_count += 1
-                        continue
-                    elif warehouse_list_2[r][c_1] == 'X':
-                        if empty_cell_count != 0:
-                            # Check if there is wall on the columns directly either up or down
-                            # of the column containing the taboo cells, between the two taboo cells.
-                            # Must be at least one empty cell between the two taboo cells in order to 
-                            # add taboo cells between them.
-
-                            # check only walls above
-                            only_walls_above = all([cell == '#' for cell in warehouse_list_2[r+1][c:c_1]])
-                                
-                            # check only walls below
-                            only_walls_below = all([cell == '#' for cell in warehouse_list_2[r-1][c:c_1]])
+                        # check only walls on left
+                        only_walls_left = True
+                        for r_2 in range(r,r_1):
+                            if warehouse_list[r_2][c-1] != '#':
+                                only_walls_left = False
                             
-                            if only_walls_above or only_walls_below:
-                                for c_2 in range(c+1,c_1):
-                                    warehouse_list_temp[r][c_2] = 'X'
-                                break
-        
-
-                # check vertically if we have two taboo corner cells with 
-                # spaces in between
-                empty_cell_count = 0
-                for r_1 in range(r+1,len(warehouse_list_2)-1):
-                    # print((r, r_1, c))
-
-                    # if cell in row is a target cell 
-                    # all cells in between two taboo corners should not be taboo
-                    if warehouse_list_2[r_1][c] in target_cells:
-                        break
-                    # if we hit a wall cell then the taboo cell was not
-                    # a corner cell or all cells between should not be taboo
-                    elif warehouse_list_2[r_1][c] == '#':
-                        break
-                    # if we hit an empty cell, we could be along a wall between two taboo cells
-                    # so want to continue searching
-                    elif warehouse_list_2[r_1][c] == ' ':
-                        empty_cell_count += 1
-                        continue
-                    elif warehouse_list_2[r_1][c] == 'X':
-                        if empty_cell_count != 0:
-                            # Check if there is wall on the columns directly either the left or right
-                            # of the column containing the taboo cells, between the two taboo cells.
-                            # Must be at least one empty cell between the two taboo cells in order to 
-                            # add taboo cells between them.
-
-                            # check only walls on left
-                            only_walls_left = True
-                            for r_2 in range(r,r_1):
-                                if warehouse_list_2[r_2][c-1] != '#':
-                                    only_walls_left = False
-                                
-                            # check only walls on right
-                            only_walls_right = True
-                            for r_3 in range(r,r_1):
-                                if warehouse_list_2[r_3][c+1] != '#':
-                                    only_walls_right = False
-                            
-                            if only_walls_left or only_walls_right:
-                                for r_4 in range(r+1,r_1):
-                                    warehouse_list_temp[r_4][c] = 'X'
-                                break
-        return warehouse_list_temp
-
-    warehouse_list = implement_rule_2(warehouse_list)
+                        # check only walls on right
+                        only_walls_right = True
+                        for r_3 in range(r,r_1):
+                            if warehouse_list[r_3][c+1] != '#':
+                                only_walls_right = False
+                        
+                        if only_walls_left or only_walls_right:
+                            for r_4 in range(r+1,r_1):
+                                warehouse_list_temp[r_4][c] = 'X'
+                            break
+    
+    warehouse_list = warehouse_list_temp
             
     # Converting warehouse representation back into string format
     warehouse_string = ""
@@ -277,6 +216,7 @@ class SokobanPuzzle(search.Problem):
     the provided module 'search.py'. 
     
     '''
+    
     
     #
     #         "INSERT YOUR CODE HERE"
@@ -322,7 +262,7 @@ class SokobanPuzzle(search.Problem):
         action_mapping = {'Left': (-1,0), 'Right': (1,0), 'Up': (0,-1), 'Down': (0,1)}
 
         # temp_warehouse =self.warehouse.copy(state[0], state.boxes[:], self.warehouse.weights)
-        temp_warehouse = self.warehouse.copy(state[0], state[1], self.warehouse.weights)
+        temp_warehouse = self.warehouse.copy(state[0], state[1], self.weights)
         x, y = state[0]
 
 
@@ -410,8 +350,51 @@ class SokobanPuzzle(search.Problem):
 
 
     def h(self, n):
-        return heuristic_function(self,n)
-        # return 0
+        """
+        Heuristic function is manhattan distance between the boxes and the targets.
+        Each of the manhattan distances is multiplied by the box weights.
+        Add the shortest manhattan distance between the worker and the closest box.
+        """
+        # total value returned by the heuristic function
+        h_n = 0
+
+        # list of the box coordinates
+        boxes = list(n.state[1])
+
+        # list of the weights
+        weights = list(self.weights)
+
+        # list of the target coordinates
+        targets = list(self.goal)
+
+        # need to check that the number of boxes equals the number of targets - defensive programming
+        assert len(boxes) == len(targets)
+
+        # store minimum manhattan distance from each box to a target
+        min_distances = []
+        for box in boxes:
+            min_distance = min(abs(box[0] - target[0]) + abs(box[1] - target[1]) for target in targets)
+            min_distances.append(min_distance)
+
+
+        # find corresponding weight of each box
+        # multiply this by the minimum manhattan distance of that box to a target
+        # and add this to the heuristic value 
+        for idx in range(len(boxes)):
+            # if the weight is 0 
+            if weights[idx] == 0:
+               h_n += min_distances[idx]
+            else:
+                h_n += min_distances[idx] * weights[idx]
+
+        # worker position
+        worker = n.state[0]
+
+        # Add the shortest euclidean/manhattan distance between the worker and the closest box
+        minimum_worker_box_distance = min([abs(box[0] - worker[0]) + abs(box[1] - worker[1]) for box in boxes])
+        h_n += (minimum_worker_box_distance - 1)
+    
+        return h_n
         
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -438,7 +421,6 @@ def check_elem_action_seq(warehouse, action_seq):
                the sequence of actions.  This must be the same string as the
                string returned by the method Warehouse.__str__()
     '''
-    ##         "INSERT YOUR CODE HERE"
     
 
     valid_actions = ['Left', 'Right', 'Up', 'Down']
@@ -530,6 +512,50 @@ def solve_weighted_sokoban(warehouse):
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+def check_corner(warehouse, r, c):
+    nr_walls_left_right = 0
+    nr_walls_up_down = 0
+
+    '''Checking for walls left and right'''
+    if warehouse[r][c + 1] == '#':
+        nr_walls_left_right += 1 
+    if warehouse[r][c - 1] == '#':
+        nr_walls_left_right += 1 
+
+    '''Checking for walls up and down'''
+    if warehouse[r + 1][c] == '#':
+        nr_walls_up_down += 1 
+    if warehouse[r - 1][c] == '#':
+        nr_walls_up_down += 1 
+
+    if (nr_walls_left_right >= 1 and nr_walls_up_down >= 1):
+        return True
+    else:
+        return False
+    
+def get_inside_warehouse_cells(warehouse, warehouse_list):
+    # know that position of worker in the start must be inside the warehouse
+    cells_inside_warehouse = []
+    worker = tuple_swap(warehouse.worker)
+    cells_inside_warehouse.append(worker)
+    boundary = []
+            
+    directions = [(0,1), (0,-1), (1,0), (-1,0)]
+
+    for d in directions:
+        if warehouse_list[worker[0] + d[0]][worker[1] + d[1]] != '#':
+            boundary.append((worker[0] + d[0],worker[1] + d[1]))
+
+    while len(boundary) != 0:
+        inside = boundary.pop(0)
+        cells_inside_warehouse.append(inside)
+        for d in directions:
+            if warehouse_list[inside[0] + d[0]][inside[1] + d[1]] != '#':
+                if (inside[0] + d[0], inside[1] + d[1]) not in boundary:
+                    if (inside[0] + d[0], inside[1] + d[1]) not in cells_inside_warehouse:
+                        boundary.append((inside[0] + d[0], inside[1] + d[1]))
+    return cells_inside_warehouse
+
 def tuple_swap(tup):
     return (tup[1], tup[0])
 
@@ -538,62 +564,10 @@ def add_tuples(tup1, tup2):
     c,d = tup2[0], tup2[1]
     return (a+c,b+d)
 
-# def move_tuple_left(tup):
-#     return add_tuples(tup, (-1,0))
 
-# def move_tuple_right(tup):
-#     return add_tuples(tup, (1,0))
 
-# def move_tuple_up(tup):
-#     return add_tuples(tup, (0,-1))
 
-# def move_tuple_down(tup):
-#     return add_tuples(tup, (0,1))
 
-def manhattan_distance(coord1, coord2):
-    return abs(coord1[0] - coord2[0]) + abs(coord1[1] - coord2[1])
-
-def heuristic_function(self, n):
-    """
-    Heuristic function is manhattan distance between the boxes and the targets.
-    Each of the manhattan distances is multiplied by the box weights.
-    Add the shortest manhattan distance between the worker and the closest box.
-    """
-    # total value returned by the heuristic function
-    h_n = 0
-
-    # boxes
-    boxes = list(n.state[1])
-
-    # weights
-    weights = list(self.weights)
-
-    # targets
-    targets = list(self.goal)
-
-    # need to check that the number of boxes equals the number of targets
-    assert len(boxes) == len(targets)
-
-    # Compute the shortest distance between each box and its corresponding target
-    for box in boxes:
-        minimum_distance = float('inf')  # initialize with infinity
-        for target in targets:
-            distance = abs(box[0] - target[0]) + abs(box[1] - target[1]) # Manhattan distance
-            if distance < minimum_distance:
-                minimum_distance = distance
-        # multiply by the weight value
-        idx = boxes.index(box)
-        weight = weights[idx]
-        h_n += minimum_distance # add the shortest distance to the total heuristic value
-
-    # worker position
-    worker = n.state[0]
-
-    # Add the shortest euclidean distance between the worker and the closest box
-    #minimum_worker_box_distance = min([math.sqrt((box[0] - worker[0])**2 + (box[1] - worker[1])**2) for box in boxes])
-    #h_n += minimum_worker_box_distance
-
-    return h_n
 
 
 
