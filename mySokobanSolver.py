@@ -73,13 +73,14 @@ def taboo_cells(warehouse):
        and the boxes.  
     '''
 
-    # lists of cell types useful for later
+    # lists of target cells and cells we need to remove
     target_cells = ['!', '.', '*']
     cells_to_remove = ['@', '$']
     
-    '''Convert the warehouse to an array consisting of each of the separate rows for convenience
-    and replace the player cells and box cells (but not target cells) with blank cells
-    '''
+    # convert the warehouse to an array consisting of each of the separate rows 
+    # and replace the worker and boxes (but not target cells) with blank cells
+    # this will be used throughout the implementation of rule 1 and 2
+    
     warehouse_string = str(warehouse)
     for cell in cells_to_remove:
         warehouse_string = warehouse_string.replace(cell,' ')
@@ -88,89 +89,106 @@ def taboo_cells(warehouse):
     for row in warehouse_string.split('\n'):
         warehouse_list.append(list(row))
 
-
-    '''
-    Cell is a corner if there are one or more wall cells above OR below 
-    AND one or more wall cells to the left OR right
-    But remember that cell also has to be INSIDE for it to be taboo
-    '''
-
+    # get a list of all positions INSIDE the warehouse
     cells_inside_warehouse = get_inside_warehouse_cells(warehouse, warehouse_list)
 
+    # rule 1
+    # iterate over each position inside the warehouse
     for position in cells_inside_warehouse:
         r = position[0]
         c = position[1]
+        # check that position is not a target cell and is a corner
         if warehouse_list[r][c] not in target_cells and check_corner(warehouse_list, r, c) == True:
+            # if so, mark as a taboo cell
             warehouse_list[r][c] = 'X'
 
+
+    # create copy of warehouse list representation for comparison
     warehouse_list_temp = warehouse_list.copy()
 
+    # rule 2
+
+    # iterate over all cells inside the warehouse
+    # only cells inside the warehouse can become taboo cells
     for (r,c) in cells_inside_warehouse:
-        # iterate over all cells inside the warehouse
-        # only cells inside the warehouse can become taboo cells
-        # print(warehouse_list_temp[r][c] == 'X')
+        # found a taboo cell
         if warehouse_list[r][c] == 'X':
             # check horisontally if we have two taboo corner cells with 
             # spaces in between
+            # need empty cell count later to check if there are spaces between two taboo corners
             empty_cell_count = 0
+            # check after current position and onwards
             for c_1 in range(c+1,len(warehouse_list[0])-1):
-                if (r,c_1) not in cells_inside_warehouse:
-                    break
                 # if cell in row is a target cell 
                 # all cells in between two taboo corners should not be taboo
-                elif warehouse_list[r][c_1] in target_cells:
+                # do not need to continue
+                if warehouse_list[r][c_1] in target_cells:
                     break
-                # if we hit a wall cell then the taboo cell was not
-                # a corner cell 
+                # if the cell is not inside the warehouse do not continue
+                elif (r,c_1) not in cells_inside_warehouse:
+                    break
+                # if we hit a wall cell do not continue
                 elif warehouse_list[r][c_1] == '#':
                     break
+                # if we hit a blank cell, increment the empty cell counter and continue checking
                 elif warehouse_list[r][c_1] == ' ':
                     empty_cell_count += 1
                     continue
+                # if we hit another taboo cell
                 elif warehouse_list[r][c_1] == 'X':
+                    # if there are empty cells between the two taboo cells
                     if empty_cell_count != 0:
-                        # Check if there is wall on the columns directly either up or down
-                        # of the column containing the taboo cells, between the two taboo cells.
-                        # Must be at least one empty cell between the two taboo cells in order to 
-                        # add taboo cells between them.
+                        # check that all cells either above or below row containing the two taboo cells
+                        # are only walls
 
                         # check only walls above
-                        only_walls_above = all([cell == '#' for cell in warehouse_list[r+1][c:c_1]])
-                            
+                        only_walls_above = True
+                        for cell in warehouse_list[r+1][c:c_1]:
+                            if cell != '#':
+                                only_walls_above = False
+                                break
+
                         # check only walls below
-                        only_walls_below = all([cell == '#' for cell in warehouse_list[r-1][c:c_1]])
+                        only_walls_below = True
+                        for cell in warehouse_list[r-1][c:c_1]:
+                            if cell != '#':
+                                only_walls_below = False
+                                break
                         
+                        # if there are only walls either above or below
                         if only_walls_above or only_walls_below:
+                            # add taboo cells between the two taboo corners
                             for c_2 in range(c+1,c_1):
                                 warehouse_list_temp[r][c_2] = 'X'
                             break
     
 
-            # check vertically if we have two taboo corner cells with 
-            # spaces in between
+            # check vertically if we have two taboo corner cells with only spaces in between
+            # set blank space counter back to 0 
             empty_cell_count = 0
             for r_1 in range(r+1,len(warehouse_list)-1):
-                if (r_1,c) not in cells_inside_warehouse:
+                # if cell in between two taboo corners is target cell
+                # then all cells in between two taboo corners should not be taboo
+                if warehouse_list[r_1][c] in target_cells:
                     break
-                # if cell in row is a target cell 
-                # all cells in between two taboo corners should not be taboo
-                elif warehouse_list[r_1][c] in target_cells:
+                # if we meet a cell not inside the warehouse it cannot be a 
+                # taboo cell, do not continue
+                elif (r_1,c) not in cells_inside_warehouse:
                     break
-                # if we hit a wall cell then the taboo cell was not
-                # a corner cell or all cells between should not be taboo
+                # if we hit a wall cell, do not continue
                 elif warehouse_list[r_1][c] == '#':
                     break
-                # if we hit an empty cell, we could be along a wall between two taboo cells
-                # so want to continue searching
+                # if we hit an empty cell, increment empty cell counter
+                # and continue checking for another potential taboo cell
                 elif warehouse_list[r_1][c] == ' ':
                     empty_cell_count += 1
                     continue
+                # we have hit another taboo cell
                 elif warehouse_list[r_1][c] == 'X':
+                    # check that there is at least one blank between the two taboo cells
                     if empty_cell_count != 0:
-                        # Check if there is wall on the columns directly either the left or right
-                        # of the column containing the taboo cells, between the two taboo cells.
-                        # Must be at least one empty cell between the two taboo cells in order to 
-                        # add taboo cells between them.
+                        # check that column to the left or right of the one containing 
+                        # the two taboo cells is only walls
 
                         # check only walls on left
                         only_walls_left = True
@@ -184,6 +202,9 @@ def taboo_cells(warehouse):
                             if warehouse_list[r_3][c+1] != '#':
                                 only_walls_right = False
                         
+                        # if there are only walls on the left and right of the column 
+                        # containing the two taboo cells, then mark the spaces between
+                        # the taboo corners as taboo cells
                         if only_walls_left or only_walls_right:
                             for r_4 in range(r+1,r_1):
                                 warehouse_list_temp[r_4][c] = 'X'
@@ -191,7 +212,7 @@ def taboo_cells(warehouse):
     
     warehouse_list = warehouse_list_temp
             
-    # Converting warehouse representation back into string format
+    # converting warehouse list back into string format
     warehouse_string = ""
     for line in warehouse_list:
         warehouse_string += ''.join(line) + '\n'
@@ -200,7 +221,8 @@ def taboo_cells(warehouse):
     # now remove target cells
     for cell in target_cells:
         warehouse_string = warehouse_string.replace(cell, ' ')
-    
+
+    # return string representation of the warehouse
     return warehouse_string
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -217,9 +239,6 @@ class SokobanPuzzle(search.Problem):
     
     '''
     
-    
-    #
-    #         "INSERT YOUR CODE HERE"
     #
     #     Revisit the sliding puzzle and the pancake puzzle for inspiration!
     #
@@ -231,129 +250,220 @@ class SokobanPuzzle(search.Problem):
 
     
     def __init__(self, warehouse):
+        """
+        This constructor specifies the current puzzle's warehouse attributes, as well as
+        the initial state and the goal conditions of the puzzle. Here, the taboo cells 
+        in the puzzle are also initialised and set as an attribute. 
+
+        @param warehouse: 
+            Warehouse instance
+
+        @return
+            Nothing.
+        """
         self.warehouse = warehouse
-        self.worker = tuple(warehouse.worker)
-        self.boxes = tuple(warehouse.boxes)
         self.targets = tuple(warehouse.targets)
         self.walls = warehouse.walls
-        self.weights = warehouse.weights
+        self.weights = tuple(warehouse.weights)
 
-        self.initial = (self.worker, self.boxes)
+        # this is the initial state
+        self.initial = (warehouse.worker, tuple(warehouse.boxes))
 
+        # this is the target position of the goals
         self.goal = self.targets
         
+        # initialise a list with overview of the taboo cells
         temp_warehouse_taboo_check = taboo_cells(warehouse)
         warehouse_list_taboo_check = []
         for row in temp_warehouse_taboo_check.split('\n'):
             warehouse_list_taboo_check.append(list(row))
 
+        # make this an attribute so that it can be used later without repetition 
         self.taboo_cells = warehouse_list_taboo_check
-
-        
 
 
     def actions(self, state):
         """
-        Return the list of actions that can be executed in the given state.
-        
+        This function takes the current state of the Sokoban puzzle, and checks how many actions
+        from the full set of actions that can be executed by the worker (moving Left, Right, Up
+        or Down) are legal based on the obstacles around a worker, and the box it may be pushing.
+
+        @param state: 
+            The current state, containing the current position of the worker and the boxes,
+            represented by a tuple of tuples.
+
+        @return
+            Returns a list of legal actions that can be executed by the worker in the given state.
         """
 
         valid_actions = ['Left', 'Right', 'Up', 'Down']
         action_mapping = {'Left': (-1,0), 'Right': (1,0), 'Up': (0,-1), 'Down': (0,1)}
 
-        # temp_warehouse =self.warehouse.copy(state[0], state.boxes[:], self.warehouse.weights)
-        temp_warehouse = self.warehouse.copy(state[0], state[1], self.weights)
+        # get the box positions
+        boxes = state[1]
+        # get the worker position
         x, y = state[0]
 
-
-        # print(warehouse_list_taboo_check)
-
-        L = []  # list of legal actions
+        # list of legal actions
+        L = []  
+        # test if each possible action is valid or not
         for action in valid_actions:
+            # new position of worker after action is taken
             x_new_worker, y_new_worker = x+action_mapping[action][0], y+action_mapping[action][1]
+            # new position of box after action is taken
             x_new_box, y_new_box = x_new_worker+action_mapping[action][0], y_new_worker+action_mapping[action][1]
-            
-            # temp_worker_pos = tuple_swap((x_new_worker, y_new_worker))
-            # temp_box_pos = tuple_swap((x_new_box, y_new_box))
 
-            # print(warehouse_list_taboo_check[temp_box_pos[0]][temp_box_pos[1]])
-
-
-            if (x_new_worker, y_new_worker) not in temp_warehouse.walls:
-                if (x_new_worker, y_new_worker) in temp_warehouse.boxes: # if new coordinates are a box
+            # check that worker is not moving into a wall 
+            if (x_new_worker, y_new_worker) not in self.walls:
+                # if new coordinates are a box
+                if (x_new_worker, y_new_worker) in boxes: 
+                    # check that box is not moved into a taboo cell
                     if self.taboo_cells[y_new_box][x_new_box] != 'X':
-                        if (x_new_box, y_new_box) not in temp_warehouse.walls and (x_new_box, y_new_box) not in temp_warehouse.boxes:
+                        # checks that the box is not pushed into a wall or another box
+                        if (x_new_box, y_new_box) not in self.walls and (x_new_box, y_new_box) not in boxes:
+                            # add this action as a legal action
                             L.append(action)
                 else:
+                    # add this action as a legal action
                     L.append(action)
 
+        # return the list of legal actions for this state
         return L
     
+    
     def result(self, state, action):
+        '''
+        This function takes singular legal action, changes the worker's position based on 
+        that action. If the worker's new position lands on a box, change the position of the box
+        to reflect that it has been pushed. 
+
+        @param state: 
+            The current state, containing the current position of the worker and the boxes,
+            represented by a tuple of tuples.
+        @ param action:
+            A string presenting a single action for the worker to take (either Left, Right,
+            Up or Down).
+
+        @return
+            A tuple of tuples representing the the new state of the puzzle after the action
+            has been applied. The new state contains the new position of the worker, and
+            the new positions of the boxes.
+        '''
+         
         assert action in self.actions(state)  # defensive programming
 
         action_mapping = {'Left': (-1,0), 'Right': (1,0), 'Up': (0,-1), 'Down': (0,1)}
+        # list of box positions
         boxes = list(state[1])
 
-        # action_list = [action]
-        # new_warehouse = check_elem_action_seq(self.warehouse, action_list) 
-        # new_warehouse = self.warehouse.from_string(new_warehouse) # check if this is correct
-
-        # return (new_warehouse.worker, tuple(new_warehouse.boxes))
-
-        worker_position = add_tuples(state[0], action_mapping[action])
-        if worker_position in boxes:
-            box_position = add_tuples(worker_position, action_mapping[action])
-            worker_index = boxes.index(worker_position)
-            boxes.pop(worker_index)
-            boxes.insert(worker_index, box_position)
+        # get current position of the worker
+        current_worker_position = state[0]
+        # find position worker is in after action is taken
+        new_worker_position = (current_worker_position[0] + action_mapping[action][0], current_worker_position[1] + action_mapping[action][1])
+        # check if worker moves into a box
+        if new_worker_position in boxes:
+            # find the new position of the box
+            box_position = (new_worker_position[0] + action_mapping[action][0], new_worker_position[1] + action_mapping[action][1])
+            # add new position of the box to the list of boxes
+            # but retain the order of the boxes
+            # so that the boxes still correspond to the correct weights
+            idx = boxes.index(new_worker_position)
+            boxes.pop(idx)
+            boxes.insert(idx, box_position)
+        # worker does not move into a box
         else:
-            # if box not moved, return new position of worker 
-            return (worker_position, tuple(boxes))
+            # if box not moved, return new position of worker
+            boxes = tuple(boxes) 
+            return (new_worker_position, boxes)
         
-        return (worker_position, tuple(boxes))
+        boxes = tuple(boxes)
+        # return the new state
+        return (new_worker_position, boxes)
     
 
     def goal_test(self, state):
+        """
+        This function takes the current state of the puzzle, and iterates through the box positions
+        to check if they all are located at a target goal. If there is even one box that is not
+        in a target goal position, then the function returns that the goal state hasn't been reached.
+
+        @param state: 
+            The current state, containing the current position of the worker and the boxes,
+            represented by a tuple of tuples.
+
+        @ return
+            A boolean value that returns True if the goal state has been reached, and False if
+            it has not.
+        """
         goal_reached = True
         for box in state[1]:
+            # if any box is not in a target goal position, we have not yet reached the goal state
             if box not in self.goal:
                 goal_reached = False
         return goal_reached
         
 
     def path_cost(self, c, state1, action, state2):
+        """
+        @ param c
+            An integer variable that stores the path cost as a path is being explored.
+        @ param state1
+            A tuple of tuples containing the current state of the Sokoban puzzle.
+        @ param action
+            A string representing the action taken to arrive at state2 from state1 (This
+            parameter is unused).
+        @ param state2
+            A tuple of tuples containing the prospective state of the Sokoban puzzle
+            that is to be explored.
+
+        @ return
+            The total path cost accumulated up until the current state.
+        """
+        # make lists of the box positions in the state before action is taken and after action is taken
         boxes1 = list(state1[1])
         boxes2 = list(state2[1])
 
         # state 1 -> (action) -> state 2
+        # case if the boxes have weights
         if self.weights:
-            # cost of moving box
+            # calculate the cost of moving a box
             idx = None
             for i in range(len(boxes1)):
+                # if a box has changed position from state1 to state2
                 if boxes1[i] != boxes2[i]:
                     idx = i # get the index of that box
+                    # only one box can move after an action is taken
+                    # so break out of loop if that box is found
                     break
             if idx != None:
                 # enters here if box has changed position from state1 to state2, this means box is moved
                 # get the corresponding weight of that box
-                # cost of moving box
                 weight = self.weights[idx]
+                # add the cost of moving the box
                 c += weight
             # cost of moving worker
             c += 1
+        # case if the boxes do not have weights
         else:
             # boxes don't have weights, so cost of moving (even if you also move a box) is only cost of moving worker
             c += 1
-        # return the total path cost
+        # return the total current path cost
         return c
 
 
     def h(self, n):
         """
-        Heuristic function is manhattan distance between the boxes and the targets.
-        Each of the manhattan distances is multiplied by the box weights.
-        Add the shortest manhattan distance between the worker and the closest box.
+        Heuristic function is the sum of two things:
+        1. The smallest manhattan distance between each box and a target multiplied by the weight of the box.
+        If there are no box weights, a weight of 0 is assigned to each box. If the weight of a box is 0, then
+        the smallest manhattan distance between the box and a target is NOT multiplied by 0.
+        2. The smallest manhattan distance between the worker and a box.
+
+        @param n: Node representing the current state.
+            
+        @return
+        The value of the heuristic function.
+
         """
         # total value returned by the heuristic function
         h_n = 0
@@ -362,7 +472,11 @@ class SokobanPuzzle(search.Problem):
         boxes = list(n.state[1])
 
         # list of the weights
-        weights = list(self.weights)
+        # if there are no weights, assign a weight of 0 to each of the boxes
+        if self.weights == None:
+            weights = [0] * len(boxes)
+        else:
+            weights = list(self.weights)
 
         # list of the target coordinates
         targets = list(self.goal)
@@ -371,11 +485,10 @@ class SokobanPuzzle(search.Problem):
         assert len(boxes) == len(targets)
 
         # store minimum manhattan distance from each box to a target
-        min_distances = []
+        minimum_distances = []
         for box in boxes:
-            min_distance = min(abs(box[0] - target[0]) + abs(box[1] - target[1]) for target in targets)
-            min_distances.append(min_distance)
-
+            minimum_distance = min(abs(box[0] - target[0]) + abs(box[1] - target[1]) for target in targets)
+            minimum_distances.append(minimum_distance)
 
         # find corresponding weight of each box
         # multiply this by the minimum manhattan distance of that box to a target
@@ -383,9 +496,9 @@ class SokobanPuzzle(search.Problem):
         for idx in range(len(boxes)):
             # if the weight is 0 
             if weights[idx] == 0:
-               h_n += min_distances[idx]
+               h_n += minimum_distances[idx]
             else:
-                h_n += min_distances[idx] * weights[idx]
+                h_n += minimum_distances[idx] * weights[idx]
 
         # worker position
         worker = n.state[0]
@@ -421,19 +534,19 @@ def check_elem_action_seq(warehouse, action_seq):
                the sequence of actions.  This must be the same string as the
                string returned by the method Warehouse.__str__()
     '''
-    
-
+    # list of valid actions
     valid_actions = ['Left', 'Right', 'Up', 'Down']
+    # maps action to the relevant tuple representing the action
     action_mapping = {'Left': (-1,0), 'Right': (1,0), 'Up': (0,-1), 'Down': (0,1)}
 
-    # Get location of Worker (warehouse.worker)
-    temp_warehouse =warehouse.copy(warehouse.worker, warehouse.boxes[:], warehouse.weights)
+    # make a copy of the warehouse so that we do not change it 
+    temp_warehouse = warehouse.copy(warehouse.worker, warehouse.boxes[:], warehouse.weights[:])
+    # get location of the worker
     x, y = temp_warehouse.worker
     impossible_string = 'Impossible'
 
     # if there are no actions in the list, return the warehouse unchanged 
     if len(action_seq) == 0:
-        print('Nothing')
         return temp_warehouse.__str__()
 
     # loop through each action in action_seq to check if valid
@@ -443,7 +556,6 @@ def check_elem_action_seq(warehouse, action_seq):
         if action not in valid_actions:
             return impossible_string
     
-        print(action)
         x_new_worker, y_new_worker = x+action_mapping[action][0], y+action_mapping[action][1]
         x_new_box, y_new_box = x_new_worker+action_mapping[action][0], y_new_worker+action_mapping[action][1]
 
@@ -451,7 +563,7 @@ def check_elem_action_seq(warehouse, action_seq):
             return impossible_string # Failed: player is blocked
             
         if (x_new_worker, y_new_worker) in temp_warehouse.boxes: # if new coordinates are a box
-            if (x_new_box, y_new_box) not in temp_warehouse.walls and (x_new_box, y_new_box) not in temp_warehouse.boxes: # if box is pushed into wall or another box, illegal action
+            if (x_new_box, y_new_box) not in temp_warehouse.boxes and (x_new_box, y_new_box) not in temp_warehouse.walls: # if box is pushed into wall or another box, illegal action
                 temp_warehouse.boxes.remove((x_new_worker, y_new_worker))
                 temp_warehouse.boxes.append((x_new_box, y_new_box))
                 y = y_new_worker # Successful: can move the worker + box, update with new y coordinate
@@ -465,6 +577,7 @@ def check_elem_action_seq(warehouse, action_seq):
     # Update worker location at the end of action sequence (with latest location)
     temp_warehouse.worker = x, y
 
+    # return string version of the warehouse
     return temp_warehouse.__str__()
 
 
@@ -494,75 +607,125 @@ def solve_weighted_sokoban(warehouse):
 
     '''
 
-
+    # initialise an instance of sokoban puzzle class with given warehouse
     sokoban_puzzle = SokobanPuzzle(warehouse)
 
     # returns a node object if there is a solution and None if there is not
+    # using A* graph search to find a potential solution
     solution_sokoban_puzzle = search.astar_graph_search(sokoban_puzzle)
-    print(solution_sokoban_puzzle)
 
+    # if the search algorithm returns a solution
     if solution_sokoban_puzzle:
+        # get a list of actions that solves the puzzle using function from Node class
         S = solution_sokoban_puzzle.solution()
+        # get the total path cost using attribute from Node class
         C = solution_sokoban_puzzle.path_cost 
     else:
+        # there is no solution
         return 'Impossible', None
-    
+    # return list of actions to solve puzzle and total cost
     return S, C
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-def check_corner(warehouse, r, c):
+def check_corner(warehouse_list, r, c):
+    '''
+    This function checks if position (r,c) is a corner. 
+    If there is at least one wall cell to the left or right of the position we are checking and
+    at least one wall cell above and below the position we are checking then the position is a
+    corner.
+
+    @param warehouse_list: a list representation of the warehouse
+    @param r: a list representation of the warehouse
+    @param c: a list representation of the warehouse
+
+    @return
+    A boolean True or False. True if the position checked (r,c) is a corner cell and False if not.  
+
+    '''
+    
     nr_walls_left_right = 0
     nr_walls_up_down = 0
 
-    '''Checking for walls left and right'''
-    if warehouse[r][c + 1] == '#':
+    # checking for walls left and right
+    if warehouse_list[r][c + 1] == '#':
         nr_walls_left_right += 1 
-    if warehouse[r][c - 1] == '#':
+    if warehouse_list[r][c - 1] == '#':
         nr_walls_left_right += 1 
 
-    '''Checking for walls up and down'''
-    if warehouse[r + 1][c] == '#':
+    # checking for walls up and down
+    if warehouse_list[r + 1][c] == '#':
         nr_walls_up_down += 1 
-    if warehouse[r - 1][c] == '#':
+    if warehouse_list[r - 1][c] == '#':
         nr_walls_up_down += 1 
 
+    # if there is at least one wall left or right AND above or below then
+    # the cell we are checking is a corner cell
     if (nr_walls_left_right >= 1 and nr_walls_up_down >= 1):
         return True
     else:
         return False
+
+def tuple_swap(tup):
+    '''
+    Swaps positions of elements in a tuple with two elements.
+
+    @param tup: a tuple
+
+    @return
+    A tuple with coordinates swapped
+
+    '''
+    return (tup[1], tup[0])
     
 def get_inside_warehouse_cells(warehouse, warehouse_list):
-    # know that position of worker in the start must be inside the warehouse
+    '''
+    This function finds the positions of all the cells inside the warehouse.
+
+    @param warehouse: instance of a warehouse
+    @param warehouse_list: a list representation of the warehouse
+
+    @return
+    A list of the position tuples with all positions inside the warehouse
+
+    '''
+    # it is given that position of worker in the start must be inside the warehouse
     cells_inside_warehouse = []
+    # swap position of coordinates around just to make it easier to follow when using to index list later on
     worker = tuple_swap(warehouse.worker)
     cells_inside_warehouse.append(worker)
     boundary = []
-            
+    
+    # list of tuples with all possible directions
     directions = [(0,1), (0,-1), (1,0), (-1,0)]
 
+    # checks all directions around the worker 
+    # if position is not a wall, add coordinate to the boundary list
     for d in directions:
         if warehouse_list[worker[0] + d[0]][worker[1] + d[1]] != '#':
             boundary.append((worker[0] + d[0],worker[1] + d[1]))
 
+    # while there are still cells to be explored
     while len(boundary) != 0:
-        inside = boundary.pop(0)
-        cells_inside_warehouse.append(inside)
+        # get the next cell in the boundary list that we know is inside the warehouse
+        inside_cell = boundary.pop(0)
+        # add this to list of cells we know are inside the warehouse
+        cells_inside_warehouse.append(inside_cell)
+        # now expand this cell
         for d in directions:
-            if warehouse_list[inside[0] + d[0]][inside[1] + d[1]] != '#':
-                if (inside[0] + d[0], inside[1] + d[1]) not in boundary:
-                    if (inside[0] + d[0], inside[1] + d[1]) not in cells_inside_warehouse:
-                        boundary.append((inside[0] + d[0], inside[1] + d[1]))
+            if warehouse_list[inside_cell[0] + d[0]][inside_cell[1] + d[1]] != '#':
+                # if cell is already in the boundary, do not add it again (will be explored)
+                if (inside_cell[0] + d[0], inside_cell[1] + d[1]) not in boundary:
+                    # if cell is not already in list of cells we know are inside the warehouse
+                    if (inside_cell[0] + d[0], inside_cell[1] + d[1]) not in cells_inside_warehouse:
+                        # add it to the boundary list
+                        boundary.append((inside_cell[0] + d[0], inside_cell[1] + d[1]))
+    # return complete list with cells we know are inside the warehouse
     return cells_inside_warehouse
 
-def tuple_swap(tup):
-    return (tup[1], tup[0])
 
-def add_tuples(tup1, tup2):
-    a,b = tup1[0], tup1[1]
-    c,d = tup2[0], tup2[1]
-    return (a+c,b+d)
+
 
 
 
