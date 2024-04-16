@@ -172,10 +172,10 @@ if __name__ == "__main__":
 #    test_taboo_cells_2() # Test Taboo cells from Warehouse 11
 #    test_taboo_cells_3() # Test Taboo cells from Warehouse 01
 #    test_taboo_cells_4() # Test Taboo cells from Warehouse 03 impossible
-   test_taboo_cells_5() # Test Taboo cells from Warehouse 03
+#    test_taboo_cells_5() # Test Taboo cells from Warehouse 03
 #    test_taboo_cells_6() # Test Taboo cells from Warehouse 6n
 #    test_taboo_cells_7() # Test Taboo cells from Warehouse 17
 #    test_taboo_cells_8() # Test Taboo cells from Warehouse 29
 #    test_taboo_cells_9() # Test Taboo cells from Warehouse 43
 #    test_taboo_cells_10() # Test Taboo cells from Warehouse 55
-#    test_taboo_cells_11() # Test Taboo cells from Warehouse 59
+   test_taboo_cells_11() # Test Taboo cells from Warehouse 59

@@ -36,7 +36,7 @@ def test_taboo_cells_2():
         print('But, received ');print(answer)
 
 if __name__ == "__main__":   
-#    test_warehouse_1() # test Warehouse
+    # test_warehouse_1() # test Warehouse
 #    test_warehouse_2() # test Warehouse
     
 #    print(my_team())  # should print your team

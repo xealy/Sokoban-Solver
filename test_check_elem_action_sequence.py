@@ -144,9 +144,9 @@ def test_check_elem_action_seq_5():
         print('But, received ');print(answer)
 
 if __name__ == "__main__":
-    pass    
+    # pass    
     # test_check_elem_action_seq()   #Warehouse 01
     # test_check_elem_action_seq_2() #Warehouse 11
     # test_check_elem_action_seq_3() #Warehouse 61
     # test_check_elem_action_seq_4() #Warehouse 99
-    # test_check_elem_action_seq_5() #Warehouse 151
+    test_check_elem_action_seq_5() #Warehouse 151

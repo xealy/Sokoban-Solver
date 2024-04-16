@@ -413,6 +413,11 @@ class SokobanPuzzle(search.Problem):
 
     def path_cost(self, c, state1, action, state2):
         """
+        This function returns the cost c of a solution path that goes from state1 to state2 including the cost
+        of also arriving at state1. Only one action is taken to get from state1 to state2. Therefore, the cost
+        of this action is either the sum of the cost of moving the worker and the box (if a box is moved) or 
+        just the cost of moving the worker (if a box is not moved).
+
         @ param c
             An integer variable that stores the path cost as a path is being explored.
         @ param state1
@@ -425,7 +430,7 @@ class SokobanPuzzle(search.Problem):
             that is to be explored.
 
         @ return
-            The total path cost accumulated up until the current state.
+            The total path cost accumulated up until state2.
         """
         # make lists of the box positions in the state before action is taken and after action is taken
         boxes1 = list(state1[1])
@@ -464,8 +469,9 @@ class SokobanPuzzle(search.Problem):
         Heuristic function is the sum of two things:
         1. The smallest manhattan distance between each box and any target multiplied by the weight of the box.
         If the weight of a box is 0, then the smallest manhattan distance between the box and a target is NOT multiplied by 0.
-        2. The smallest manhattan distance for a worker to reach any box. This is given by the smallest Manhattan distance
-        between the worker and any box minus the value of 1.
+        2. The manhattan distance for the worker to reach the nearest box. This is given by the Manhattan distance
+        between the worker and its closest box minus the value of 1. We subtract 1 from the manhattan distance between the worker 
+        and the nearest box as we want to find the distance to get the worker next to the box. 
 
         @param n: Node representing the current state.
             
@@ -506,7 +512,7 @@ class SokobanPuzzle(search.Problem):
             if weights[idx] == 0:
                h_n += minimum_distances[idx]
             else:
-                h_n += minimum_distances[idx] * (weights[idx])
+                h_n += (minimum_distances[idx] * weights[idx])
 
         # worker position
         worker = n.state[0]
@@ -547,7 +553,7 @@ def check_elem_action_seq(warehouse, action_seq):
     # maps action to the relevant tuple representing the action
     action_mapping = {'Left': (-1,0), 'Right': (1,0), 'Up': (0,-1), 'Down': (0,1)}
 
-    # make a copy of the warehouse so that we do not change it 
+    # make a shallow copy of the warehouse so that we do not change it 
     temp_warehouse = warehouse.copy(warehouse.worker, warehouse.boxes[:], warehouse.weights[:])
     # get location of the worker
     x, y = temp_warehouse.worker
@@ -568,7 +574,7 @@ def check_elem_action_seq(warehouse, action_seq):
         x_new_box, y_new_box = x_new_worker+action_mapping[action][0], y_new_worker+action_mapping[action][1]
 
         if (x_new_worker, y_new_worker) in temp_warehouse.walls: # if new coordinates are a wall
-            return impossible_string # Failed: player is blocked
+            return impossible_string # Failed: worker is blocked
             
         if (x_new_worker, y_new_worker) in temp_warehouse.boxes: # if new coordinates are a box
             if (x_new_box, y_new_box) not in temp_warehouse.boxes and (x_new_box, y_new_box) not in temp_warehouse.walls: # if box is pushed into wall or another box, illegal action
@@ -639,7 +645,7 @@ def solve_weighted_sokoban(warehouse):
 
 def check_corner(warehouse_list, r, c):
     '''
-    This function checks if position (r,c) is a corner. 
+    This function checks if position (r,c) is a corner (r <-> rows, c <-> columns).
     If there is at least one wall cell to the left or right of the position we are checking and
     at least one wall cell above and below the position we are checking then the position is a
     corner.
