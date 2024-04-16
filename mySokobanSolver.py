@@ -248,6 +248,14 @@ class SokobanPuzzle(search.Problem):
     #
     #     You are allowed (and encouraged) to use auxiliary functions and classes
 
+    '''
+    The state representation of the puzzle is a tuple consisting of the position of the worker as a tuple
+    and the boxes as a tuple of tuples. The positions are (x,y) coordinates (x <-> columns, y <-> rows).
+
+    The possible actions are represented by strings: 'Left', 'Right', 'Up', 'Down'
+    and their respective direction mappings are: (-1,0), (1,0), (0,-1), (0,1).
+    '''
+
     
     def __init__(self, warehouse):
         """
@@ -262,9 +270,9 @@ class SokobanPuzzle(search.Problem):
             Nothing.
         """
         self.warehouse = warehouse
-        self.targets = tuple(warehouse.targets)
+        self.targets = warehouse.targets
         self.walls = warehouse.walls
-        self.weights = tuple(warehouse.weights)
+        self.weights = warehouse.weights
 
         # this is the initial state
         self.initial = (warehouse.worker, tuple(warehouse.boxes))
@@ -447,17 +455,17 @@ class SokobanPuzzle(search.Problem):
         else:
             # boxes don't have weights, so cost of moving (even if you also move a box) is only cost of moving worker
             c += 1
-        # return the total current path cost
+        # return the total current path cost up to state2
         return c
 
 
     def h(self, n):
         """
         Heuristic function is the sum of two things:
-        1. The smallest manhattan distance between each box and a target multiplied by the weight of the box.
-        If there are no box weights, a weight of 0 is assigned to each box. If the weight of a box is 0, then
-        the smallest manhattan distance between the box and a target is NOT multiplied by 0.
-        2. The smallest manhattan distance between the worker and a box.
+        1. The smallest manhattan distance between each box and any target multiplied by the weight of the box.
+        If the weight of a box is 0, then the smallest manhattan distance between the box and a target is NOT multiplied by 0.
+        2. The smallest manhattan distance for a worker to reach any box. This is given by the smallest Manhattan distance
+        between the worker and any box minus the value of 1.
 
         @param n: Node representing the current state.
             
@@ -498,12 +506,12 @@ class SokobanPuzzle(search.Problem):
             if weights[idx] == 0:
                h_n += minimum_distances[idx]
             else:
-                h_n += minimum_distances[idx] * weights[idx]
+                h_n += minimum_distances[idx] * (weights[idx])
 
         # worker position
         worker = n.state[0]
 
-        # Add the shortest euclidean/manhattan distance between the worker and the closest box
+        # Add the shortest manhattan distance between the worker and the closest box minus 1
         minimum_worker_box_distance = min([abs(box[0] - worker[0]) + abs(box[1] - worker[1]) for box in boxes])
         h_n += (minimum_worker_box_distance - 1)
     
@@ -637,8 +645,8 @@ def check_corner(warehouse_list, r, c):
     corner.
 
     @param warehouse_list: a list representation of the warehouse
-    @param r: a list representation of the warehouse
-    @param c: a list representation of the warehouse
+    @param r: row coordinate 
+    @param c: column coordinate
 
     @return
     A boolean True or False. True if the position checked (r,c) is a corner cell and False if not.  
@@ -687,7 +695,8 @@ def get_inside_warehouse_cells(warehouse, warehouse_list):
     @param warehouse_list: a list representation of the warehouse
 
     @return
-    A list of the position tuples with all positions inside the warehouse
+    A list of the position tuples with all positions inside the warehouse.
+    All positions are coordinates (r,c) (r <-> rows, c <-> columns)
 
     '''
     # it is given that position of worker in the start must be inside the warehouse
